@@ -4,11 +4,6 @@ cmake_minimum_required (VERSION 3.0)
 set (CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 add_definitions (-DNOMINMAX)
 
-configure_file (
-	common/config.h.in
-	common/config.h
-)
-
 include_directories (
 	${CMAKE_CURRENT_SOURCE_DIR}
 	${CMAKE_CURRENT_BINARY_DIR}
@@ -91,3 +86,9 @@ endif ()
 if (USE_NSURL_BACKEND)
 	target_link_libraries (https https-nsurl)
 endif ()
+
+### Generate config.h
+configure_file (
+	common/config.h.in
+	common/config.h
+)
