@@ -10,9 +10,9 @@ include_directories (
 )
 
 ### Compiler-specific flags
-if (${CMAKE_CXX_COMPILER_ID} MATCHES "MSVC")
+if (MSVC)
 	set (DLLEXPORT "__declspec(dllexport)")
-elseif (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU" OR ${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 	set (DLLEXPORT "__attribute__((visibility(\"default\")))")
 	add_compile_options ("-fvisibility=hidden")
 	add_link_options ("-fvisibility=hidden")
