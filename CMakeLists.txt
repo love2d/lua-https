@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 2.6)
 
-project (Https)
+project (Https CXX)
 
 add_subdirectory (src)

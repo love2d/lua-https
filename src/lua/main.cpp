@@ -168,7 +168,7 @@ static int w_request(lua_State *L)
 	return advanced ? 3 : 2;
 }
 
-extern "C" int luaopen_https(lua_State *L)
+extern "C" int DLLEXPORT luaopen_https(lua_State *L)
 {
 	lua_newtable(L);
 

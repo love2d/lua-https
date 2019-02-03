@@ -9,6 +9,15 @@ include_directories (
 	${CMAKE_CURRENT_BINARY_DIR}
 )
 
+### Compiler-specific flags
+if (${CMAKE_CXX_COMPILER_ID} MATCHES "MSVC")
+	set (DLLEXPORT "__declspec(dllexport)")
+elseif (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU" OR ${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
+	set (DLLEXPORT "__attribute__((visibility(\"default\")))")
+	add_compile_options ("-fvisibility=hidden")
+	add_link_options ("-fvisibility=hidden")
+endif ()
+
 ### "Libraries"
 add_library (https MODULE
 	lua/main.cpp
