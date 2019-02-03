@@ -3,6 +3,7 @@
 #include <security.h>
 #include <schnlsp.h>
 #include <assert.h>
+#include <algorithm>
 
 #include "SChannelConnection.h"
 
