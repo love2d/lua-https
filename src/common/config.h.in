@@ -4,3 +4,4 @@
 #cmakedefine USE_NSURL_BACKEND
 #cmakedefine USE_WINSOCK
 #define DLLEXPORT @DLLEXPORT@
+#cmakedefine DEBUG_SCHANNEL

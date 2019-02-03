@@ -68,6 +68,7 @@ elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 
 	option (USE_WINSOCK "Use winsock instead of BSD sockets (windows-only)" OFF)
 endif ()
+option (DEBUG_SCHANNEL "Enable debug output in schannel backend" OFF)
 
 ### Dependencies
 target_link_libraries (https https-common)
