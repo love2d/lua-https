@@ -2,6 +2,7 @@ cmake_minimum_required (VERSION 3.0)
 
 ### Basic compilation settings
 set (CMAKE_POSITION_INDEPENDENT_CODE TRUE)
+add_definitions (-DNOMINMAX)
 
 configure_file (
 	common/config.h.in

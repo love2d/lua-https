@@ -8,8 +8,6 @@
 #else
 #	include <winsock2.h>
 #	include <ws2tcpip.h>
-#	undef min
-#	undef max
 #endif // USE_WINSOCK
 
 #include "PlaintextConnection.h"
