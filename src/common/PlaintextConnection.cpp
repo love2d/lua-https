@@ -1,0 +1,100 @@
+#include <cstring>
+#ifndef PLATFORM_WINDOWS
+#	include <netdb.h>
+#	include <unistd.h>
+#	include <sys/types.h>
+#	include <sys/socket.h>
+#else
+#	include <winsock2.h>
+#	include <ws2tcpip.h>
+#	undef min
+#	undef max
+#endif // PLATFORM_WINDOWS
+
+#include "PlaintextConnection.h"
+
+#ifdef PLATFORM_WINDOWS
+	static void close(int fd)
+	{
+		closesocket(fd);
+	}
+#endif // PLATFORM_WINDOWS
+
+PlaintextConnection::PlaintextConnection()
+	: fd(-1)
+{
+#ifdef PLATFORM_WINDOWS
+	static bool wsaInit = false;
+	if (!wsaInit)
+	{
+		WSADATA data;
+		WSAStartup(MAKEWORD(2, 2), &data);
+	}
+#endif
+}
+
+PlaintextConnection::~PlaintextConnection()
+{
+	if (fd != -1)
+		::close(fd);
+}
+
+bool PlaintextConnection::connect(const std::string &hostname, uint16_t port)
+{
+	addrinfo hints;
+	std::memset(&hints, 0, sizeof(hints));
+	hints.ai_flags = hints.ai_protocol = 0;
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+
+	addrinfo *addrs = nullptr;
+	std::string portString = std::to_string(port);
+	getaddrinfo(hostname.c_str(), portString.c_str(), &hints, &addrs);
+
+	// Try all addresses returned
+	bool connected = false;
+	for (addrinfo *addr = addrs; !connected && addr; addr = addr->ai_next)
+	{
+		fd = socket(addr->ai_family, SOCK_STREAM, 0);
+		connected = ::connect(fd, addr->ai_addr, addr->ai_addrlen) == 0;
+		if (!connected)
+			::close(fd);
+	}
+
+	freeaddrinfo(addrs);
+
+	if (!connected)
+	{
+		fd = -1;
+		return false;
+	}
+
+	return true;
+}
+
+size_t PlaintextConnection::read(char *buffer, size_t size)
+{
+	ssize_t read = ::recv(fd, buffer, size, 0);
+	if (read < 0)
+		read = 0;
+	return read;
+}
+
+size_t PlaintextConnection::write(const char *buffer, size_t size)
+{
+	ssize_t written = ::send(fd, buffer, size, 0);
+	if (written < 0)
+		written = 0;
+	return written;
+}
+
+void PlaintextConnection::close()
+{
+	::close(fd);
+	fd = -1;
+}
+
+int PlaintextConnection::getFd() const
+{
+	return fd;
+}

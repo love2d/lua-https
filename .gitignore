@@ -1,0 +1,6 @@
+.*.swp
+*.o
+*.dll
+*.exe
+*.so
+build

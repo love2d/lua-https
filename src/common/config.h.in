@@ -1,0 +1,4 @@
+#cmakedefine USE_CURL_BACKEND
+#cmakedefine USE_OPENSSL_BACKEND
+#cmakedefine USE_SCHANNEL_BACKEND
+#cmakedefine USE_NSURL_BACKEND
