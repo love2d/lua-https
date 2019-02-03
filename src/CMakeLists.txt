@@ -46,16 +46,22 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 	option (USE_OPENSSL_BACKEND "Use the openssl backend" ON)
 	option (USE_SCHANNEL_BACKEND "Use the schannel backend (windows-only)" OFF)
 	option (USE_NSURL_BACKEND "Use the NSUrl backend (macos-only)" OFF)
+
+	option (USE_WINSOCK "Use winsock instead of BSD sockets (windows-only)" OFF)
 elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
 	option (USE_CURL_BACKEND "Use the libcurl backend" OFF)
 	option (USE_OPENSSL_BACKEND "Use the openssl backend" OFF)
 	option (USE_SCHANNEL_BACKEND "Use the schannel backend (windows-only)" ON)
 	option (USE_NSURL_BACKEND "Use the NSUrl backend (macos-only)" OFF)
+
+	option (USE_WINSOCK "Use winsock instead of BSD sockets (windows-only)" ON)
 elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 	option (USE_CURL_BACKEND "Use the libcurl backend" OFF)
 	option (USE_OPENSSL_BACKEND "Use the openssl backend" OFF)
 	option (USE_SCHANNEL_BACKEND "Use the schannel backend (windows-only)" OFF)
 	option (USE_NSURL_BACKEND "Use the NSUrl backend (macos-only)" ON)
+
+	option (USE_WINSOCK "Use winsock instead of BSD sockets (windows-only)" OFF)
 endif ()
 
 ### Dependencies

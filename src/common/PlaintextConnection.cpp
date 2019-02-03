@@ -1,5 +1,6 @@
+#include "common/config.h"
 #include <cstring>
-#ifndef PLATFORM_WINDOWS
+#ifndef USE_WINSOCK
 #	include <netdb.h>
 #	include <unistd.h>
 #	include <sys/types.h>
@@ -9,28 +10,28 @@
 #	include <ws2tcpip.h>
 #	undef min
 #	undef max
-#endif // PLATFORM_WINDOWS
+#endif // USE_WINSOCK
 
 #include "PlaintextConnection.h"
 
-#ifdef PLATFORM_WINDOWS
+#ifdef USE_WINSOCK
 	static void close(int fd)
 	{
 		closesocket(fd);
 	}
-#endif // PLATFORM_WINDOWS
+#endif // USE_WINSOCK
 
 PlaintextConnection::PlaintextConnection()
 	: fd(-1)
 {
-#ifdef PLATFORM_WINDOWS
+#ifdef USE_WINSOCK
 	static bool wsaInit = false;
 	if (!wsaInit)
 	{
 		WSADATA data;
 		WSAStartup(MAKEWORD(2, 2), &data);
 	}
-#endif
+#endif // USE_WINSOCK
 }
 
 PlaintextConnection::~PlaintextConnection()
