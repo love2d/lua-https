@@ -73,18 +73,18 @@ bool PlaintextConnection::connect(const std::string &hostname, uint16_t port)
 
 size_t PlaintextConnection::read(char *buffer, size_t size)
 {
-	ssize_t read = ::recv(fd, buffer, size, 0);
+	auto read = ::recv(fd, buffer, size, 0);
 	if (read < 0)
 		read = 0;
-	return read;
+	return static_cast<size_t>(read);
 }
 
 size_t PlaintextConnection::write(const char *buffer, size_t size)
 {
-	ssize_t written = ::send(fd, buffer, size, 0);
+	auto written = ::send(fd, buffer, size, 0);
 	if (written < 0)
 		written = 0;
-	return written;
+	return static_cast<size_t>(written);
 }
 
 void PlaintextConnection::close()
