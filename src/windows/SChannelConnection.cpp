@@ -74,29 +74,28 @@ SChannelConnection::~SChannelConnection()
 
 SECURITY_STATUS InitializeSecurityContext(CredHandle *phCredential, std::unique_ptr<CtxtHandle>& phContext, const std::string& szTargetName, ULONG fContextReq, const std::vector<char>& inputBuffer, std::vector<char>& outputBuffer, ULONG *pfContextAttr)
 {
-	std::array<SecBuffer, 2> recvBuffers;
+	std::array<SecBuffer, 1> recvBuffers;
 	recvBuffers[0].BufferType = SECBUFFER_TOKEN;
 	recvBuffers[0].pvBuffer = outputBuffer.data();
 	recvBuffers[0].cbBuffer = outputBuffer.size();
 
-	recvBuffers[1].BufferType = SECBUFFER_EMPTY;
-	recvBuffers[1].pvBuffer = nullptr;
-	recvBuffers[1].cbBuffer = 0;
-
-	SecBuffer sendBuffer;
-	sendBuffer.BufferType = SECBUFFER_TOKEN;
-	sendBuffer.pvBuffer = const_cast<char*>(inputBuffer.data());
-	sendBuffer.cbBuffer = inputBuffer.size();
+	std::array<SecBuffer, 2> sendBuffers;
+	sendBuffers[0].BufferType = SECBUFFER_TOKEN;
+	sendBuffers[0].pvBuffer = const_cast<char*>(inputBuffer.data());
+	sendBuffers[0].cbBuffer = inputBuffer.size();
+	sendBuffers[1].BufferType = SECBUFFER_EMPTY;
+	sendBuffers[1].pvBuffer = nullptr;
+	sendBuffers[1].cbBuffer = 0;
 
 	SecBufferDesc recvBufferDesc, sendBufferDesc;
 	recvBufferDesc.ulVersion = sendBufferDesc.ulVersion = SECBUFFER_VERSION;
 	recvBufferDesc.pBuffers = &recvBuffers[0];
 	recvBufferDesc.cBuffers = recvBuffers.size();
 
-	if (inputBuffer.size() > 0)
+	if (!inputBuffer.empty())
 	{
-		sendBufferDesc.pBuffers = &sendBuffer;
-		sendBufferDesc.cBuffers = 1;
+		sendBufferDesc.pBuffers = &sendBuffers[0];
+		sendBufferDesc.cBuffers = sendBuffers.size();
 	}
 	else
 	{
@@ -160,6 +159,7 @@ bool SChannelConnection::connect(const std::string &hostname, uint16_t port)
 		outputBuffer.resize(bufferSize);
 
 		bool recvData = false;
+		bool sendData = false;
 		auto ret = InitializeSecurityContext(&credHandle, context, hostname, ISC_REQ_STREAM, inputBuffer, outputBuffer, &contextAttr);
 		switch (ret)
 		{
@@ -171,18 +171,25 @@ bool SChannelConnection::connect(const std::string &hostname, uint16_t port)
 				success = done = true;
 			break;*/
 		case SEC_I_CONTINUE_NEEDED:
+			debug << "Initialize: continue needed\n";
 			recvData = true;
+			sendData = true;
 			break;
 		case SEC_E_INCOMPLETE_CREDENTIALS:
+			debug << "Initialize failed: incomplete credentials\n";
 			done = true;
 			break;
 		case SEC_E_INCOMPLETE_MESSAGE:
+			debug << "Initialize: incomplete message\n";
 			recvData = true;
 			break;
 		case SEC_E_OK:
+			debug << "Initialize succeeded\n";
 			success = done = true;
+			sendData = true;
 			break;
 		default:
+			debug << "Initialize done: " << outputBuffer.size() << " bytes of output and status " << ret << "\n";
 			done = true;
 			// TODO: error
 			break;
@@ -191,10 +198,11 @@ bool SChannelConnection::connect(const std::string &hostname, uint16_t port)
 		if (!done)
 			contextCreated = true;
 
-		debug << "Initialize done, with " << outputBuffer.size() << " bytes of output and status " << ret << "\n";
-
-		if (outputBuffer.size() > 0)
+		if (sendData && !outputBuffer.empty())
+		{
 			socket.write(outputBuffer.data(), outputBuffer.size());
+			debug << "Sent " << outputBuffer.size() << " bytes of data\n";
+		}
 
 		if (recvData)
 		{
@@ -203,6 +211,7 @@ bool SChannelConnection::connect(const std::string &hostname, uint16_t port)
 			inputBuffer.resize(actual);
 
 			debug << "Received " << actual << " bytes of data\n";
+
 			if (actual == 0)
 			{
 				debug << "No data received, break\n";
