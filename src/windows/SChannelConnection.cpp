@@ -255,13 +255,20 @@ size_t SChannelConnection::read(char *buffer, size_t size)
 
 size_t SChannelConnection::decrypt(char *buffer, size_t size, bool recurse)
 {
+	if (size == 0)
+		return 0;
+
 	SecBuffer secBuffers[4];
 	secBuffers[0].cbBuffer = size;
 	secBuffers[0].BufferType = SECBUFFER_DATA;
 	secBuffers[0].pvBuffer = buffer;
 
 	for (size_t i = 1; i < 4; ++i)
+	{
 		secBuffers[i].BufferType = SECBUFFER_EMPTY;
+		secBuffers[i].pvBuffer = nullptr;
+		secBuffers[i].cbBuffer = 0;
+	}
 
 	SecBufferDesc secBufferDesc;
 	secBufferDesc.ulVersion = SECBUFFER_VERSION;
