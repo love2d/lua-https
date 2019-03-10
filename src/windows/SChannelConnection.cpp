@@ -72,7 +72,7 @@ SChannelConnection::~SChannelConnection()
 	}
 }
 
-SECURITY_STATUS InitializeSecurityContext(CredHandle *phCredential, std::unique_ptr<CtxtHandle>& phContext, const std::string& szTargetName, ULONG fContextReq, const std::vector<char>& inputBuffer, std::vector<char>& outputBuffer, ULONG *pfContextAttr)
+SECURITY_STATUS InitializeSecurityContext(CredHandle *phCredential, std::unique_ptr<CtxtHandle>& phContext, const std::string& szTargetName, ULONG fContextReq, std::vector<char>& inputBuffer, std::vector<char>& outputBuffer, ULONG *pfContextAttr)
 {
 	std::array<SecBuffer, 1> recvBuffers;
 	recvBuffers[0].BufferType = SECBUFFER_TOKEN;
@@ -81,7 +81,7 @@ SECURITY_STATUS InitializeSecurityContext(CredHandle *phCredential, std::unique_
 
 	std::array<SecBuffer, 2> sendBuffers;
 	sendBuffers[0].BufferType = SECBUFFER_TOKEN;
-	sendBuffers[0].pvBuffer = const_cast<char*>(inputBuffer.data());
+	sendBuffers[0].pvBuffer = inputBuffer.data();
 	sendBuffers[0].cbBuffer = inputBuffer.size();
 	sendBuffers[1].BufferType = SECBUFFER_EMPTY;
 	sendBuffers[1].pvBuffer = nullptr;
@@ -118,6 +118,17 @@ SECURITY_STATUS InitializeSecurityContext(CredHandle *phCredential, std::unique_
 	auto ret = InitializeSecurityContext(phCredential, phOldContext, const_cast<char*>(szTargetName.c_str()), fContextReq, 0, 0, &sendBufferDesc, 0, phNewContext, &recvBufferDesc, pfContextAttr, nullptr);
 
 	outputBuffer.resize(recvBuffers[0].cbBuffer);
+
+	// Clear the input buffer, so the reader can append
+	// If we have unprocessed data, leave it in the buffer
+	size_t unprocessed = 0;
+	if (sendBuffers[1].BufferType == SECBUFFER_EXTRA)
+		unprocessed = sendBuffers[1].cbBuffer;
+
+	if (unprocessed > 0)
+		memmove(inputBuffer.data(), inputBuffer.data() + inputBuffer.size() - unprocessed, unprocessed);
+
+	inputBuffer.resize(unprocessed);
 
 	return ret;
 }
@@ -206,15 +217,18 @@ bool SChannelConnection::connect(const std::string &hostname, uint16_t port)
 
 		if (recvData)
 		{
-			inputBuffer.resize(bufferSize);
-			size_t actual = socket.read(inputBuffer.data(), bufferSize);
-			inputBuffer.resize(actual);
+			size_t unprocessed = inputBuffer.size();
+			inputBuffer.resize(unprocessed + bufferSize);
+			size_t actual = socket.read(inputBuffer.data() + unprocessed, bufferSize);
+			inputBuffer.resize(actual + unprocessed);
 
 			debug << "Received " << actual << " bytes of data\n";
+			if (unprocessed > 0)
+				debug << "  had " << unprocessed << " bytes of remaining, unprocessed data\n";
 
-			if (actual == 0)
+			if (actual + unprocessed == 0)
 			{
-				debug << "No data received, break\n";
+				debug << "No data to submit, break\n";
 				break;
 			}
 		}
