@@ -5,6 +5,9 @@
 
 #include <vector>
 
+struct _SecHandle;
+using CtxtHandle = _SecHandle;
+
 class SChannelConnection : public Connection
 {
 public:
@@ -19,9 +22,10 @@ public:
 
 private:
 	PlaintextConnection socket;
-	void *context; // FIXME
+	CtxtHandle *context;
 	std::vector<char> encRecvBuffer;
 	std::vector<char> decRecvBuffer;
 
 	size_t decrypt(char *buffer, size_t size, bool recurse = true);
+	void destroyContext();
 };

@@ -64,12 +64,7 @@ SChannelConnection::SChannelConnection()
 
 SChannelConnection::~SChannelConnection()
 {
-	// TODO?
-	if (CtxtHandle *context = static_cast<CtxtHandle*>(this->context))
-	{
-		DeleteSecurityContext(context);
-		delete context;
-	}
+	destroyContext();
 }
 
 SECURITY_STATUS InitializeSecurityContext(CredHandle *phCredential, std::unique_ptr<CtxtHandle>& phContext, const std::string& szTargetName, ULONG fContextReq, std::vector<char>& inputBuffer, std::vector<char>& outputBuffer, ULONG *pfContextAttr)
@@ -200,9 +195,9 @@ bool SChannelConnection::connect(const std::string &hostname, uint16_t port)
 			sendData = true;
 			break;
 		default:
-			debug << "Initialize done: " << outputBuffer.size() << " bytes of output and status " << ret << "\n";
+			debug << "Initialize done: " << outputBuffer.size() << " bytes of output and unknown status " << ret << "\n";
 			done = true;
-			// TODO: error
+			success = false;
 			break;
 		}
 
@@ -232,7 +227,6 @@ bool SChannelConnection::connect(const std::string &hostname, uint16_t port)
 				break;
 			}
 		}
-		// TODO: A bunch of frees?
 	} while (!done);
 
 	debug << "Done!\n";
@@ -254,7 +248,7 @@ bool SChannelConnection::connect(const std::string &hostname, uint16_t port)
 	}
 
 	if (success)
-		this->context = static_cast<void*>(context.release());
+		this->context = context.release();
 	else if (contextCreated)
 		DeleteSecurityContext(context.get());
 
@@ -444,9 +438,20 @@ size_t SChannelConnection::write(const char *buffer, size_t size)
 	return size;
 }
 
+void SChannelConnection::destroyContext()
+{
+	if (context)
+	{
+		DeleteSecurityContext(context);
+		delete context;
+		context = nullptr;
+	}
+}
+
 void SChannelConnection::close()
 {
-	// TODO
+	destroyContext();
+	socket.close();
 }
 
 bool SChannelConnection::valid()
