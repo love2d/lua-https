@@ -236,7 +236,23 @@ bool SChannelConnection::connect(const std::string &hostname, uint16_t port)
 	} while (!done);
 
 	debug << "Done!\n";
-	// TODO: Check resulting context attributes
+
+	if (success)
+	{
+		SecPkgContext_Flags resultFlags;
+		QueryContextAttributes(context.get(), SECPKG_ATTR_FLAGS, &resultFlags);
+		if (resultFlags.Flags & ISC_REQ_CONFIDENTIALITY == 0)
+		{
+			debug << "Resulting context is not encrypted, marking as failed\n";
+			success = false;
+		}
+		if (resultFlags.Flags & ISC_REQ_INTEGRITY == 0)
+		{
+			debug << "Resulting context is not signed, marking as failed\n";
+			success = false;
+		}
+	}
+
 	if (success)
 		this->context = static_cast<void*>(context.release());
 	else if (contextCreated)
