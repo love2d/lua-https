@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <algorithm>
 #include <memory>
+#include <array>
 
 #include "common/config.h"
 #include "SChannelConnection.h"
