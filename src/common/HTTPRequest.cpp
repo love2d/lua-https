@@ -1,6 +1,7 @@
 #include <sstream>
 #include <string>
 #include <memory>
+#include <limits>
 
 #include "HTTPRequest.h"
 #include "PlaintextConnection.h"
@@ -83,7 +84,7 @@ HTTPSClient::Reply HTTPRequest::request(const HTTPSClient::Request &req)
 			return reply;
 
 		response >> reply.responseCode;
-		response.ignore(1, '\n');
+		response.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
 		for (std::string line; getline(response, line, '\n') && line != "\r"; )
 		{
