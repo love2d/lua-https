@@ -2,6 +2,7 @@
 #include <string>
 #include <memory>
 #include <limits>
+#include <stdexcept>
 
 #include "HTTPRequest.h"
 #include "PlaintextConnection.h"
