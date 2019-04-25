@@ -14,7 +14,7 @@ static NSString *toNSString(const std::string &str)
 
 static std::string toCppString(NSData *data)
 {
-	return std::string((const char*) [data bytes], (size_t) [data length]);
+	return std::string((const char*) data.bytes, (size_t) data.length);
 }
 
 static std::string toCppString(NSString *str)
@@ -23,27 +23,41 @@ static std::string toCppString(NSString *str)
 }
 
 HTTPSClient::Reply NSURLClient::request(const HTTPSClient::Request &req)
-{
-	NSURL *url = [NSURL URLWithString: toNSString(req.url)];
-	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL: url];
+{ @autoreleasepool {
+	NSURL *url = [NSURL URLWithString:toNSString(req.url)];
+	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
 
 	switch(req.method)
 	{
 	case Request::GET:
-		[request setHTTPMethod: @"GET"];
+		[request setHTTPMethod:@"GET"];
 		break;
 	case Request::POST:
-		[request setHTTPMethod: @"POST"];
-		[request setHTTPBody: [NSData dataWithBytesNoCopy: (void*) req.postdata.data() length: req.postdata.size()]];
+		[request setHTTPMethod:@"POST"];
+		[request setHTTPBody:[NSData dataWithBytesNoCopy:(void*) req.postdata.data() length:req.postdata.size()]];
 		break;
 	}
 
 	for (auto &header : req.headers)
 		[request setValue: toNSString(header.second) forHTTPHeaderField: toNSString(header.first)];
 
-	NSHTTPURLResponse *response = nil;
-	NSError *error = nil;
-	NSData *body = [NSURLConnection sendSynchronousRequest: request returningResponse: &response error: &error];
+	__block NSHTTPURLResponse *response = nil;
+	__block NSError *error = nil;
+    __block NSData *body = nil;
+
+    dispatch_semaphore_t sem = dispatch_semaphore_create(0);
+
+    NSURLSessionTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request
+        completionHandler:^(NSData *data, NSURLResponse *resp, NSError *err) {
+            body = data;
+            response = (NSHTTPURLResponse *)resp;
+            error = err;
+            dispatch_semaphore_signal(sem);
+    }];
+
+    [task resume];
+
+    dispatch_semaphore_wait(sem, DISPATCH_TIME_FOREVER);
 
 	HTTPSClient::Reply reply;
 	reply.responseCode = 400;
@@ -66,4 +80,4 @@ HTTPSClient::Reply NSURLClient::request(const HTTPSClient::Request &req)
 	}
 
 	return reply;
-}
+} }

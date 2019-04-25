@@ -14,7 +14,6 @@
 #	include "windows/SChannelConnection.h"
 #endif
 #ifdef USE_NSURL_BACKEND
-#	import <Foundation/Foundation.h>
 #	include "macos/NSURLClient.h"
 #endif
 
@@ -122,48 +121,38 @@ static int w_request(lua_State *L)
 		lua_pop(L, 1);
 	}
 
-#if defined(USE_NSURL_BACKEND) && defined(__APPLE__)
-	@autoreleasepool
-#elif defined(USE_NSURL_BACKEND) && defined(GNUSTEP)
-	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-#endif
-	{
-		for (size_t i = 0; clients[i]; ++i)
-		{
-			HTTPSClient &client = *clients[i];
-			if (!client.valid())
-				continue;
+    for (size_t i = 0; clients[i]; ++i)
+    {
+        HTTPSClient &client = *clients[i];
+        if (!client.valid())
+            continue;
 
-			auto reply = client.request(req);
-			lua_pushinteger(L, reply.responseCode);
-			w_pushstring(L, reply.body);
+        auto reply = client.request(req);
+        lua_pushinteger(L, reply.responseCode);
+        w_pushstring(L, reply.body);
 
-			if (advanced)
-			{
-				lua_newtable(L);
-				for (auto header : reply.headers)
-				{
-					w_pushstring(L, header.first);
-					w_pushstring(L, header.second);
-					lua_settable(L, -3);
-				}
-			}
+        if (advanced)
+        {
+            lua_newtable(L);
+            for (const auto &header : reply.headers)
+            {
+                w_pushstring(L, header.first);
+                w_pushstring(L, header.second);
+                lua_settable(L, -3);
+            }
+        }
 
-			foundClient = true;
-			break;
-		}
+        foundClient = true;
+        break;
+    }
 
-		if (!foundClient)
-		{
-			lua_pushnil(L);
-			lua_pushstring(L, "No applicable implementation found");
-			if (advanced)
-				lua_pushnil(L);
-		}
-	}
-#if defined(USE_NSURL_BACKEND) && defined(GNUSTEP)
-	[pool release];
-#endif
+    if (!foundClient)
+    {
+        lua_pushnil(L);
+        lua_pushstring(L, "No applicable implementation found");
+        if (advanced)
+            lua_pushnil(L);
+    }
 
 	return advanced ? 3 : 2;
 }
