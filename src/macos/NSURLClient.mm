@@ -39,25 +39,25 @@ HTTPSClient::Reply NSURLClient::request(const HTTPSClient::Request &req)
 	}
 
 	for (auto &header : req.headers)
-		[request setValue: toNSString(header.second) forHTTPHeaderField: toNSString(header.first)];
+		[request setValue:toNSString(header.second) forHTTPHeaderField:toNSString(header.first)];
 
 	__block NSHTTPURLResponse *response = nil;
 	__block NSError *error = nil;
-    __block NSData *body = nil;
+	__block NSData *body = nil;
 
-    dispatch_semaphore_t sem = dispatch_semaphore_create(0);
+	dispatch_semaphore_t sem = dispatch_semaphore_create(0);
 
-    NSURLSessionTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request
-        completionHandler:^(NSData *data, NSURLResponse *resp, NSError *err) {
-            body = data;
-            response = (NSHTTPURLResponse *)resp;
-            error = err;
-            dispatch_semaphore_signal(sem);
-    }];
+	NSURLSessionTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request
+		completionHandler:^(NSData *data, NSURLResponse *resp, NSError *err) {
+			body = data;
+			response = (NSHTTPURLResponse *)resp;
+			error = err;
+			dispatch_semaphore_signal(sem);
+	}];
 
-    [task resume];
+	[task resume];
 
-    dispatch_semaphore_wait(sem, DISPATCH_TIME_FOREVER);
+	dispatch_semaphore_wait(sem, DISPATCH_TIME_FOREVER);
 
 	HTTPSClient::Reply reply;
 	reply.responseCode = 400;

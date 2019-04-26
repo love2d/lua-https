@@ -121,38 +121,38 @@ static int w_request(lua_State *L)
 		lua_pop(L, 1);
 	}
 
-    for (size_t i = 0; clients[i]; ++i)
-    {
-        HTTPSClient &client = *clients[i];
-        if (!client.valid())
-            continue;
+	for (size_t i = 0; clients[i]; ++i)
+	{
+		HTTPSClient &client = *clients[i];
+		if (!client.valid())
+			continue;
 
-        auto reply = client.request(req);
-        lua_pushinteger(L, reply.responseCode);
-        w_pushstring(L, reply.body);
+		auto reply = client.request(req);
+		lua_pushinteger(L, reply.responseCode);
+		w_pushstring(L, reply.body);
 
-        if (advanced)
-        {
-            lua_newtable(L);
-            for (const auto &header : reply.headers)
-            {
-                w_pushstring(L, header.first);
-                w_pushstring(L, header.second);
-                lua_settable(L, -3);
-            }
-        }
+		if (advanced)
+		{
+			lua_newtable(L);
+			for (const auto &header : reply.headers)
+			{
+				w_pushstring(L, header.first);
+				w_pushstring(L, header.second);
+				lua_settable(L, -3);
+			}
+		}
 
-        foundClient = true;
-        break;
-    }
+		foundClient = true;
+		break;
+	}
 
-    if (!foundClient)
-    {
-        lua_pushnil(L);
-        lua_pushstring(L, "No applicable implementation found");
-        if (advanced)
-            lua_pushnil(L);
-    }
+	if (!foundClient)
+	{
+		lua_pushnil(L);
+		lua_pushstring(L, "No applicable implementation found");
+		if (advanced)
+			lua_pushnil(L);
+	}
 
 	return advanced ? 3 : 2;
 }
