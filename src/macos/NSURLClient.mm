@@ -7,11 +7,6 @@ bool NSURLClient::valid() const
 	return true;
 }
 
-static NSString *toNSString(const std::string &str)
-{
-	return [NSString stringWithUTF8String: str.c_str()];
-}
-
 static std::string toCppString(NSData *data)
 {
 	return std::string((const char*) data.bytes, (size_t) data.length);
@@ -24,7 +19,7 @@ static std::string toCppString(NSString *str)
 
 HTTPSClient::Reply NSURLClient::request(const HTTPSClient::Request &req)
 { @autoreleasepool {
-	NSURL *url = [NSURL URLWithString:toNSString(req.url)];
+	NSURL *url = [NSURL URLWithString:@(req.url.c_str())];
 	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
 
 	switch(req.method)
@@ -39,7 +34,7 @@ HTTPSClient::Reply NSURLClient::request(const HTTPSClient::Request &req)
 	}
 
 	for (auto &header : req.headers)
-		[request setValue:toNSString(header.second) forHTTPHeaderField:toNSString(header.first)];
+		[request setValue:@(header.second.c_str()) forHTTPHeaderField:@(header.first.c_str())];
 
 	__block NSHTTPURLResponse *response = nil;
 	__block NSError *error = nil;
@@ -74,7 +69,7 @@ HTTPSClient::Reply NSURLClient::request(const HTTPSClient::Request &req)
 		NSDictionary *headers = [response allHeaderFields];
 		for (NSString *key in headers)
 		{
-			NSString *value = [headers objectForKey: key];
+			NSString *value = headers[key];
 			reply.headers[toCppString(key)] = toCppString(value);
 		}
 	}
