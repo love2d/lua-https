@@ -8,7 +8,7 @@ do
 end
 
 do
-	local code, body, headers = https.request("http://example.com", {method = "post", headers = {}, body = "cake"})
+	local code, body, headers = https.request("http://example.com", {method = "post", headers = {}, data = "cake"})
 	assert(code == 200 and headers, body)
 
 	for i, v in pairs(headers) do
