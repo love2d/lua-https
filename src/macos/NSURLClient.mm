@@ -26,14 +26,16 @@ HTTPSClient::Reply NSURLClient::request(const HTTPSClient::Request &req)
 	NSURL *url = [NSURL URLWithString:@(req.url.c_str())];
 	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
 
+	NSData *bodydata = nil;
 	switch(req.method)
 	{
 	case Request::GET:
 		[request setHTTPMethod:@"GET"];
 		break;
 	case Request::POST:
+		bodydata = [NSData dataWithBytesNoCopy:(void*) req.postdata.data() length:req.postdata.size() freeWhenDone:NO];
 		[request setHTTPMethod:@"POST"];
-		[request setHTTPBody:[NSData dataWithBytesNoCopy:(void*) req.postdata.data() length:req.postdata.size()]];
+		[request setHTTPBody:bodydata];
 		break;
 	}
 
