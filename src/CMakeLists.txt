@@ -96,6 +96,12 @@ if (USE_SCHANNEL_BACKEND)
 endif ()
 
 if (USE_NSURL_BACKEND)
+	set_target_properties(
+		https-nsurl
+		PROPERTIES
+		MACOSX_BUNDLE YES
+		XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES  
+	)
 	target_link_libraries (https "-framework Foundation")
 	target_link_libraries (https https-nsurl)
 endif ()
