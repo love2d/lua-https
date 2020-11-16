@@ -1,0 +1,139 @@
+name: "build-and-test"
+on:
+  push:
+    branches:
+      - master
+
+env:
+  ACTIONS_ALLOW_UNSECURE_COMMANDS: true  # required for leafo/gh-actions-lua
+
+jobs:
+  build_macos_10_luajit:
+    runs-on: "macos-10.15"
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v2
+    - uses: leafo/gh-actions-lua@v7
+      with:
+        luaVersion: "luajit"
+    - run: |
+        cmake -G Xcode -S . -B ./build -DLUA_INCLUDE_DIR=${{ runner.workspace }}/lua-https/.lua/include/luajit-2.1 -DLUA_LIBRARIES=${{ runner.workspace }}/lua-https/.lua/lib/libluajit-5.1.a
+        cd ./build
+        xcodebuild
+        xcodebuild -configuration Release
+        mv src/Debug/libhttps.so src/Debug/https.so
+        mv src/Release/libhttps.so src/Release/https.so
+        
+        cd src/Debug
+        lua -l "https" -e "assert(require('https').request('https://httpbin.org/post', {method='post', data='lotsa=data'}) == 200)"
+        cd ../Release
+        lua -l "https" -e "assert(require('https').request('https://httpbin.org/post', {method='post', data='lotsa=data'}) == 200)"
+    - uses: actions/upload-artifact@v2
+      with:
+        name: luajit-macos10.zip
+        path: build/src/**/https.so
+  
+  build_macos_10_lua51:
+    runs-on: "macos-10.15"
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v2
+    - uses: leafo/gh-actions-lua@v7
+      with:
+        luaVersion: "5.1.5"
+    - run: |
+        cmake -G Xcode -S . -B ./build -DLUA_INCLUDE_DIR=${{ runner.workspace }}/lua-https/.lua/include -DLUA_LIBRARIES=${{ runner.workspace }}/lua-https/.lua/lib/liblua.a
+        cd ./build
+        xcodebuild
+        xcodebuild -configuration Release
+        mv src/Debug/libhttps.so src/Debug/https.so
+        mv src/Release/libhttps.so src/Release/https.so
+        
+        cd src/Debug
+        lua -l "https" -e "assert(require('https').request('https://httpbin.org/post', {method='post', data='lotsa=data'}) == 200)"
+        cd ../Release
+        lua -l "https" -e "assert(require('https').request('https://httpbin.org/post', {method='post', data='lotsa=data'}) == 200)"
+    - uses: actions/upload-artifact@v2
+      with:
+        name: lua51-macos10.zip
+        path: build/src/**/https.so
+    
+  build_macos_11:
+    runs-on: "macos-11.0"
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v2
+      - uses: leafo/gh-actions-lua@v7
+        with:
+          luaVersion: "5.1.5"
+      - run: |
+          cmake -G Xcode -S . -B ./build -DLUA_INCLUDE_DIR=${{ runner.workspace }}/lua-https/.lua/include -DLUA_LIBRARIES=${{ runner.workspace }}/lua-https/.lua/lib/liblua.a
+          cd ./build
+          xcodebuild
+          xcodebuild -configuration Release
+          mv src/Debug/libhttps.so src/Debug/https.so
+          mv src/Release/libhttps.so src/Release/https.so
+          
+          cd src/Debug
+          lua -l "https" -e "assert(require('https').request('https://httpbin.org/post', {method='post', data='lotsa=data'}) == 200)"
+          cd ../Release
+          lua -l "https" -e "assert(require('https').request('https://httpbin.org/post', {method='post', data='lotsa=data'}) == 200)"
+      - uses: actions/upload-artifact@v2
+        with:
+          name: macos11.zip
+          path: build/src/**/https.so
+
+  build_linux:
+    runs-on: "ubuntu-20.04"
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build and test
+        run: |
+          # install dependencies
+          sudo apt-get install -y cmake lua5.1 liblua5.1-0-dev luajit libluajit-5.1-dev libcurl4-openssl-dev g++ libssl-dev
+            
+          # build
+          cmake -S . -B ./build
+          cd build
+          make
+          cd ..
+          cp build/src/libhttps.so ./https.so
+          
+          # Test
+          lua -l "https" -e "assert(require('https').request('https://httpbin.org/post', {method='post', data='lotsa=data'}) == 200)"
+          luajit -l "https" -e "assert(require('https').request('https://httpbin.org/post', {method='post', data='lotsa=data'}) == 200)"
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ubuntu.zip
+          path: https.so
+
+  build_windows:
+    runs-on: "windows-2019"
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v2
+    - uses: carlosperate/download-file-action@v1.0.3
+      with:
+        file-url: "https://master.dl.sourceforge.net/project/luabinaries/5.1.5/Windows%20Libraries/Dynamic/lua-5.1.5_Win64_dll14_lib.zip"
+        file-name: "lua51.zip"
+    - uses: carlosperate/download-file-action@v1.0.3
+      with:
+        file-url: "https://iweb.dl.sourceforge.net/project/luabinaries/5.1.5/Tools%20Executables/lua-5.1.5_Win64_bin.zip"
+        file-name: "lua51bin.zip"
+    - run: |
+        7z x lua51.zip -o${{ runner.workspace }}/lua-51
+        7z x lua51bin.zip -o${{ runner.workspace }}/lua-51/bin
+    - uses: ashutoshvarma/action-cmake-build@master
+      with:
+        build-dir: ${{ runner.workspace }}/build          
+        build-type: Debug
+        # Extra options pass to cmake while configuring project
+        configure-options: "-H. -A x64 -T v140 -DLUA_INCLUDE_DIR=${{ runner.workspace }}/lua-51/include -DLUA_LIBRARIES=${{ runner.workspace }}/lua-51/lua5.1.lib"
+    - run: |
+        cd ${{ runner.workspace }}/build/src/Debug
+        ${{ runner.workspace }}/lua-51/bin/lua5.1.exe -l "https" -e "assert(require('https').request('https://httpbin.org/post', {method='post', data='lotsa=data'}) == 200)"
+    - uses: actions/upload-artifact@v2
+      with:
+        name: windows.zip
+        path: ${{ runner.workspace }}/build/src/**/https.dll
