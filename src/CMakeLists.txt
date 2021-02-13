@@ -1,48 +1,15 @@
 cmake_minimum_required (VERSION 3.0)
 
-### Basic compilation settings
-set (CMAKE_POSITION_INDEPENDENT_CODE TRUE)
-add_definitions (-DNOMINMAX)
-
-include_directories (
-	${CMAKE_CURRENT_SOURCE_DIR}
-	${CMAKE_CURRENT_BINARY_DIR}
-)
-
-### Compiler-specific flags
-if (MSVC)
-	set (DLLEXPORT "__declspec(dllexport)")
-elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-	set (DLLEXPORT "__attribute__((visibility(\"default\")))")
-	add_compile_options ("-fvisibility=hidden")
-	add_link_options ("-fvisibility=hidden")
-endif ()
-
-### "Libraries"
-add_library (https MODULE
+set (HTTPS_SOURCES
 	lua/main.cpp
-)
-
-add_library (https-common STATIC
 	common/HTTPRequest.cpp
 	common/HTTPSClient.cpp
 	common/PlaintextConnection.cpp
 )
-
-add_library (https-curl STATIC EXCLUDE_FROM_ALL
-	generic/CurlClient.cpp
-)
-
-add_library (https-openssl STATIC EXCLUDE_FROM_ALL
-	generic/OpenSSLConnection.cpp
-)
-
-add_library (https-schannel STATIC EXCLUDE_FROM_ALL
-	windows/SChannelConnection.cpp
-)
-
-add_library (https-nsurl STATIC EXCLUDE_FROM_ALL
-	macos/NSURLClient.mm
+set (HTTPS_LINK_LIBRARIES)
+set (HTTPS_INCLUDE_DIRECTORIES
+	${CMAKE_CURRENT_SOURCE_DIR}
+	${CMAKE_CURRENT_BINARY_DIR}
 )
 
 ### Flags
@@ -51,6 +18,7 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 	option (USE_OPENSSL_BACKEND "Use the openssl backend" ON)
 	option (USE_SCHANNEL_BACKEND "Use the schannel backend (windows-only)" OFF)
 	option (USE_NSURL_BACKEND "Use the NSUrl backend (macos-only)" OFF)
+	option (USE_ANDROID_BACKEND "Use the Android Java backend (Android-only)" OFF)
 
 	option (USE_WINSOCK "Use winsock instead of BSD sockets (windows-only)" OFF)
 elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
@@ -58,6 +26,7 @@ elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
 	option (USE_OPENSSL_BACKEND "Use the openssl backend" OFF)
 	option (USE_SCHANNEL_BACKEND "Use the schannel backend (windows-only)" ON)
 	option (USE_NSURL_BACKEND "Use the NSUrl backend (macos-only)" OFF)
+	option (USE_ANDROID_BACKEND "Use the Android Java backend (Android-only)" OFF)
 
 	option (USE_WINSOCK "Use winsock instead of BSD sockets (windows-only)" ON)
 elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
@@ -65,36 +34,71 @@ elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 	option (USE_OPENSSL_BACKEND "Use the openssl backend" OFF)
 	option (USE_SCHANNEL_BACKEND "Use the schannel backend (windows-only)" OFF)
 	option (USE_NSURL_BACKEND "Use the NSUrl backend (macos-only)" ON)
+	option (USE_ANDROID_BACKEND "Use the Android Java backend (Android-only)" OFF)
+
+	option (USE_WINSOCK "Use winsock instead of BSD sockets (windows-only)" OFF)
+elseif (ANDROID)
+	option (USE_CURL_BACKEND "Use the libcurl backend" OFF)
+	option (USE_OPENSSL_BACKEND "Use the openssl backend" OFF)
+	option (USE_SCHANNEL_BACKEND "Use the schannel backend (windows-only)" OFF)
+	option (USE_NSURL_BACKEND "Use the NSUrl backend (macos-only)" OFF)
+	option (USE_ANDROID_BACKEND "Use the Android Java backend (Android-only)" ON)
 
 	option (USE_WINSOCK "Use winsock instead of BSD sockets (windows-only)" OFF)
 endif ()
 option (DEBUG_SCHANNEL "Enable debug output in schannel backend" OFF)
 
 ### Dependencies
-target_link_libraries (https https-common)
 
 find_package (Lua 5.1 REQUIRED)
-include_directories (${LUA_INCLUDE_DIR})
-target_link_libraries (https ${LUA_LIBRARIES})
+list (APPEND HTTPS_INCLUDE_DIRECTORIES ${LUA_INCLUDE_DIR})
+list (APPEND HTTPS_LINK_LIBRARIES ${LUA_LIBRARIES})
 
 if (USE_CURL_BACKEND)
 	find_package (CURL REQUIRED)
-	include_directories (${CURL_INCLUDE_DIR})
-	target_link_libraries (https https-curl ${CURL_LIBRARIES})
+	list (APPEND HTTPS_SOURCES generic/CurlClient.cpp)
+	list (APPEND HTTPS_INCLUDE_DIRECTORIES ${CURL_INCLUDE_DIR})
+	list (APPEND HTTPS_LINK_LIBRARIES ${CURL_LIBRARIES})
 endif ()
 
 if (USE_OPENSSL_BACKEND)
 	find_package (OpenSSL REQUIRED)
-	include_directories (${OPENSSL_INCLUDE_DIR})
-	target_link_libraries (https https-openssl ${OPENSSL_LIBRARIES})
+	list (APPEND HTTPS_SOURCES generic/OpenSSLConnection.cpp)
+	list (APPEND HTTPS_INCLUDE_DIRECTORIES ${OPENSSL_INCLUDE_DIR})
+	list (APPEND HTTPS_LINK_LIBRARIES ${OPENSSL_LIBRARIES})
 endif ()
 
 if (USE_SCHANNEL_BACKEND)
-	target_link_libraries (https https-schannel ws2_32 secur32)
+	list (APPEND HTTPS_SOURCES windows/SChannelConnection.cpp)
+	list (APPEND HTTPS_LINK_LIBRARIES ws2_32 secur32)
 endif ()
 
 if (USE_NSURL_BACKEND)
-	target_link_libraries (https https-nsurl)
+	list (APPEND HTTPS_SOURCES macos/NSURLClient.mm)
+endif ()
+
+if (USE_ANDROID_BACKEND)
+	list (APPEND HTTPS_SOURCES android/AndroidClient.cpp)
+endif ()
+
+### Main library
+add_library (https MODULE ${HTTPS_SOURCES})
+
+### Target options
+target_include_directories (https PRIVATE ${HTTPS_INCLUDE_DIRECTORIES})
+target_compile_definitions (https PRIVATE NOMINMAX)
+target_link_libraries (https ${HTTPS_LINK_LIBRARIES})
+set_target_properties (https PROPERTIES
+	POSITION_INDEPENDENT_CODE ON
+	CXX_VISIBILITY_PRESET hidden
+	PREFIX ""
+)
+
+### Compiler-specific flags
+if (MSVC)
+	set (DLLEXPORT "__declspec(dllexport)")
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+	set (DLLEXPORT "__attribute__((visibility(\"default\")))")
 endif ()
 
 ### Generate config.h
