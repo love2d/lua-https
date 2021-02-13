@@ -29,12 +29,6 @@ std::string replace(const std::string &str, const std::string &from, const std::
 	return ss.str();
 }
 
-std::string fromJavaMUTF(const std::string &str)
-{
-	static std::string null("", 1);
-	return replace(str, "\xC0\x80", null);
-}
-
 jstring newStringUTF(JNIEnv *env, const std::string &str)
 {
 	static std::string null("", 1);

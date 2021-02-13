@@ -12,7 +12,7 @@ class AndroidClient: public HTTPSClient
 {
 public:
 	AndroidClient();
-	
+
 	bool valid() const override;
 	HTTPSClient::Reply request(const HTTPSClient::Request &req) override;
 
