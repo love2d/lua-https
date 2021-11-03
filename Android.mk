@@ -11,7 +11,8 @@ LOCAL_ARM_NEON := true
 
 LOCAL_C_INCLUDES := \
 	${LOCAL_PATH}/src \
-	${LOCAL_PATH}/src/android
+	${LOCAL_PATH}/src/android \
+	${LOCAL_PATH}/src/android/ndk-build
 
 LOCAL_SRC_FILES := \
 	src/lua/main.cpp \
