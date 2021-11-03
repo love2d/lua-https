@@ -18,6 +18,9 @@ public:
 
 private:
 	JNIEnv *(*SDL_AndroidGetJNIEnv)();
+	jobject (*SDL_AndroidGetActivity)();
+
+	jclass getHTTPSClass() const;
 };
 
 #endif

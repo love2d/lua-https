@@ -7,7 +7,7 @@
 
 #include <dlfcn.h>
 
-std::string replace(const std::string &str, const std::string &from, const std::string &to)
+static std::string replace(const std::string &str, const std::string &from, const std::string &to)
 {
 	std::stringstream ss;
 	size_t oldpos = 0;
@@ -29,8 +29,9 @@ std::string replace(const std::string &str, const std::string &from, const std::
 	return ss.str();
 }
 
-jstring newStringUTF(JNIEnv *env, const std::string &str)
+static jstring newStringUTF(JNIEnv *env, const std::string &str)
 {
+	// We want std::string that contains null byte, hence length of 1.
 	static std::string null("", 1);
 
 	std::string newStr = replace(str, null, "\xC0\x80");
@@ -38,8 +39,9 @@ jstring newStringUTF(JNIEnv *env, const std::string &str)
 	return jstr;
 }
 
-std::string getStringUTF(JNIEnv *env, jstring str)
+static std::string getStringUTF(JNIEnv *env, jstring str)
 {
+	// We want std::string that contains null byte, hence length of 1.
 	static std::string null("", 1);
 
 	const char *c = env->GetStringUTFChars(str, nullptr);
@@ -55,19 +57,27 @@ AndroidClient::AndroidClient()
 {
 	// Look for SDL_AndroidGetJNIEnv
 	SDL_AndroidGetJNIEnv = (decltype(SDL_AndroidGetJNIEnv)) dlsym(RTLD_DEFAULT, "SDL_AndroidGetJNIEnv");
+	// Look for SDL_AndroidGetActivity
+	SDL_AndroidGetActivity = (decltype(SDL_AndroidGetActivity)) dlsym(RTLD_DEFAULT, "SDL_AndroidGetActivity");
 }
 
 bool AndroidClient::valid() const
 {
-	if (SDL_AndroidGetJNIEnv)
+	if (SDL_AndroidGetJNIEnv && SDL_AndroidGetActivity)
 	{
 		JNIEnv *env = SDL_AndroidGetJNIEnv();
 
 		if (env)
 		{
-			jclass httpsClass = env->FindClass("org/love2d/luahttps/LuaHTTPS");
+			jclass httpsClass = getHTTPSClass();
+			if (env->ExceptionCheck())
+			{
+				env->ExceptionClear();
+				return false;
+			}
+
 			env->DeleteLocalRef(httpsClass);
-			return httpsClass != nullptr;
+			return true;
 		}
 	}
 
@@ -77,7 +87,7 @@ bool AndroidClient::valid() const
 HTTPSClient::Reply AndroidClient::request(const HTTPSClient::Request &req)
 {
 	JNIEnv *env = SDL_AndroidGetJNIEnv();
-	jclass httpsClass = env->FindClass("org/love2d/luahttps/LuaHTTPS");
+	jclass httpsClass = getHTTPSClass();
 
 	if (httpsClass == nullptr)
 	{
@@ -170,6 +180,33 @@ HTTPSClient::Reply AndroidClient::request(const HTTPSClient::Request &req)
 	}
 
 	return response;
+}
+
+jclass AndroidClient::getHTTPSClass() const
+{
+	JNIEnv *env = SDL_AndroidGetJNIEnv();
+
+	jclass classLoaderClass = env->FindClass("java/lang/ClassLoader");
+	jmethodID loadClass = env->GetMethodID(classLoaderClass, "loadClass", "(Ljava/lang/String;)Ljava/lang/Class;");
+
+	jobject activity = SDL_AndroidGetActivity();
+
+	if (activity == nullptr)
+		return nullptr;
+
+	jclass gameActivity = env->GetObjectClass(activity);
+	jmethodID getLoader = env->GetMethodID(gameActivity, "getClassLoader", "()Ljava/lang/ClassLoader;");
+	jobject classLoader = env->CallObjectMethod(activity, getLoader);
+
+	jstring httpsClassName = env->NewStringUTF("org.love2d.luahttps.LuaHTTPS");
+	jclass httpsClass = (jclass) env->CallObjectMethod(classLoader, loadClass, httpsClassName);
+
+	env->DeleteLocalRef(gameActivity);
+	env->DeleteLocalRef(httpsClassName);
+	env->DeleteLocalRef(activity);
+	env->DeleteLocalRef(classLoaderClass);
+
+	return httpsClass;
 }
 
 #endif

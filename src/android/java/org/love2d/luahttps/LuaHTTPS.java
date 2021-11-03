@@ -12,6 +12,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,39 +40,51 @@ class LuaHTTPS {
         headers.clear();
     }
 
+    @Keep
     public void setUrl(String url) {
         urlString = url;
     }
 
+    @Keep
     public void setPostData(byte[] postData) {
         this.postData = postData;
     }
 
+    @Keep
     public void addHeader(String key, String value) {
         headers.put(key, value);
     }
 
+    @Keep
     public String[] getInterleavedHeaders() {
-        String[] result = new String[headers.size() * 2];
-        int i = 0;
+        ArrayList<String> resultInterleaved = new ArrayList<String>();
 
         for (Map.Entry<String, String> header: headers.entrySet()) {
-            result[i * 2] = header.getKey();
-            result[i * 2 + 1] = header.getValue();
-            i++;
+            String key = header.getKey();
+            String value = header.getValue();
+
+            if (key != null && value != null) {
+                resultInterleaved.add(key);
+                resultInterleaved.add(value);
+            }
         }
 
+        String[] result = new String[resultInterleaved.size()];
+        resultInterleaved.toArray(result);
         return result;
     }
 
+    @Keep
     public int getResponseCode() {
         return responseCode;
     }
 
+    @Keep
     public byte[] getResponse() {
         return response;
     }
 
+    @Keep
     public boolean request() {
         if (urlString == null) {
             return false;
