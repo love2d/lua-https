@@ -70,6 +70,8 @@ elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 endif ()
 option (DEBUG_SCHANNEL "Enable debug output in schannel backend" OFF)
 
+set_target_properties(https PROPERTIES PREFIX "")
+
 ### Dependencies
 target_link_libraries (https https-common)
 

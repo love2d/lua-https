@@ -15,7 +15,7 @@ HTTPRequest::HTTPRequest(ConnectionFactory factory)
 HTTPSClient::Reply HTTPRequest::request(const HTTPSClient::Request &req)
 {
 	HTTPSClient::Reply reply;
-	reply.responseCode = 400;
+	reply.responseCode = 0;
 
 	auto info = parseUrl(req.url);
 	if (!info.valid)

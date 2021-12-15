@@ -94,6 +94,7 @@ static int w_request(lua_State *L)
 	auto url = w_checkstring(L, 1);
 	HTTPSClient::Request req(url);
 
+	std::string errorMessage("No applicable implementation found");
 	bool foundClient = false;
 	bool advanced = false;
 
@@ -124,10 +125,21 @@ static int w_request(lua_State *L)
 	for (size_t i = 0; clients[i]; ++i)
 	{
 		HTTPSClient &client = *clients[i];
+		HTTPSClient::Reply reply;
+
 		if (!client.valid())
 			continue;
 
-		auto reply = client.request(req);
+		try
+		{
+			reply = client.request(req);
+		}
+		catch(const std::exception& e)
+		{
+			errorMessage = e.what();
+			break;
+		}
+		
 		lua_pushinteger(L, reply.responseCode);
 		w_pushstring(L, reply.body);
 
@@ -149,12 +161,10 @@ static int w_request(lua_State *L)
 	if (!foundClient)
 	{
 		lua_pushnil(L);
-		lua_pushstring(L, "No applicable implementation found");
-		if (advanced)
-			lua_pushnil(L);
+		lua_pushstring(L, errorMessage.c_str());
 	}
 
-	return advanced ? 3 : 2;
+	return (advanced && foundClient) ? 3 : 2;
 }
 
 extern "C" int DLLEXPORT luaopen_https(lua_State *L)
