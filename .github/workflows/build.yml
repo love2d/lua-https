@@ -14,7 +14,7 @@ jobs:
         with:
           luaVersion: "5.1.5"
       - run: |
-          export MACOSX_DEPLOYMENT_TARGET=10.7
+          export MACOSX_DEPLOYMENT_TARGET=10.9
           cmake -G Xcode -S . -B ./build -DLUA_INCLUDE_DIR=${{ runner.workspace }}/lua-https/.lua/include -DLUA_LIBRARIES=${{ runner.workspace }}/lua-https/.lua/lib/liblua.a
           cd ./build
           xcodebuild -configuration Release derivedDataPath Build
@@ -42,7 +42,7 @@ jobs:
           cd build
           make
           cd ..
-          cp build/src/libhttps.so ./https.so
+          cp build/src/https.so ./https.so
           
           # Test
           lua -l "https" -e "assert(require('https').request('https://httpbin.org/post', {method='post', data='lotsa=data'}) == 200)"
