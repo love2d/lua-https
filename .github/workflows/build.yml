@@ -14,21 +14,18 @@ jobs:
         with:
           luaVersion: "5.1.5"
       - run: |
+          export MACOSX_DEPLOYMENT_TARGET=10.7
           cmake -G Xcode -S . -B ./build -DLUA_INCLUDE_DIR=${{ runner.workspace }}/lua-https/.lua/include -DLUA_LIBRARIES=${{ runner.workspace }}/lua-https/.lua/lib/liblua.a
           cd ./build
-          xcodebuild
-          xcodebuild -configuration Release
-          mv src/Debug/libhttps.so src/Debug/https.so
-          mv src/Release/libhttps.so src/Release/https.so
-          
-          cd src/Debug
-          lua -l "https" -e "assert(require('https').request('https://httpbin.org/post', {method='post', data='lotsa=data'}) == 200)"
-          cd ../Release
+          xcodebuild -configuration Release derivedDataPath Build
+          mv Build/Release/libhttps.so Build/Release/https.so
+
+          cd Build/Release
           lua -l "https" -e "assert(require('https').request('https://httpbin.org/post', {method='post', data='lotsa=data'}) == 200)"
       - uses: actions/upload-artifact@v2
         with:
-          name: macos11.zip
-          path: build/src/**/https.so
+          name: https-macos.zip
+          path: build/Build/**/https.so
 
   Linux:
     runs-on: "ubuntu-20.04"
@@ -52,7 +49,7 @@ jobs:
           luajit -l "https" -e "assert(require('https').request('https://httpbin.org/post', {method='post', data='lotsa=data'}) == 200)"
       - uses: actions/upload-artifact@v2
         with:
-          name: ubuntu.zip
+          name: https-ubuntu.zip
           path: https.so
 
   Windows:
@@ -74,13 +71,13 @@ jobs:
     - uses: ashutoshvarma/action-cmake-build@master
       with:
         build-dir: ${{ runner.workspace }}/build          
-        build-type: Debug
+        build-type: Release
         # Extra options pass to cmake while configuring project
         configure-options: "-H. -A x64 -T v140 -DLUA_INCLUDE_DIR=${{ runner.workspace }}/lua-51/include -DLUA_LIBRARIES=${{ runner.workspace }}/lua-51/lua5.1.lib"
     - run: |
-        cd ${{ runner.workspace }}/build/src/Debug
+        cd ${{ runner.workspace }}/build/src/Release
         ${{ runner.workspace }}/lua-51/bin/lua5.1.exe -l "https" -e "assert(require('https').request('https://httpbin.org/post', {method='post', data='lotsa=data'}) == 200)"
     - uses: actions/upload-artifact@v2
       with:
-        name: windows.zip
+        name: https-windows.zip
         path: ${{ runner.workspace }}/build/src/**/https.dll
