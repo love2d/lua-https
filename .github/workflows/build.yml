@@ -17,7 +17,7 @@ jobs:
           export MACOSX_DEPLOYMENT_TARGET=10.9
           cmake -G Xcode -S . -B ./build -DLUA_INCLUDE_DIR=${{ runner.workspace }}/lua-https/.lua/include -DLUA_LIBRARIES=${{ runner.workspace }}/lua-https/.lua/lib/liblua.a
           cd ./build
-          xcodebuild -configuration Release -derivedDataPath Build
+          xcodebuild -configuration Release -scheme https -derivedDataPath Build
           mv Build/Release/libhttps.so Build/Release/https.so
 
           cd Build/Release
