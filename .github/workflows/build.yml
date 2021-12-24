@@ -4,59 +4,9 @@ on: [push, pull_request]
 env:
   ACTIONS_ALLOW_UNSECURE_COMMANDS: true  # required for leafo/gh-actions-lua
 
-jobs:
-  build_macos_10_luajit:
-    runs-on: "macos-10.15"
-    timeout-minutes: 30
-    steps:
-    - uses: actions/checkout@v2
-    - uses: leafo/gh-actions-lua@v7
-      with:
-        luaVersion: "luajit"
-    - run: |
-        cmake -G Xcode -S . -B ./build -DLUA_INCLUDE_DIR=${{ runner.workspace }}/lua-https/.lua/include/luajit-2.1 -DLUA_LIBRARIES=${{ runner.workspace }}/lua-https/.lua/lib/libluajit-5.1.a
-        cd ./build
-        xcodebuild
-        xcodebuild -configuration Release
-        mv src/Debug/libhttps.so src/Debug/https.so
-        mv src/Release/libhttps.so src/Release/https.so
-        
-        cd src/Debug
-        lua -l "https" -e "assert(require('https').request('https://httpbin.org/post', {method='post', data='lotsa=data'}) == 200)"
-        cd ../Release
-        lua -l "https" -e "assert(require('https').request('https://httpbin.org/post', {method='post', data='lotsa=data'}) == 200)"
-    - uses: actions/upload-artifact@v2
-      with:
-        name: luajit-macos10.zip
-        path: build/src/**/https.so
-  
-  build_macos_10_lua51:
-    runs-on: "macos-10.15"
-    timeout-minutes: 30
-    steps:
-    - uses: actions/checkout@v2
-    - uses: leafo/gh-actions-lua@v7
-      with:
-        luaVersion: "5.1.5"
-    - run: |
-        cmake -G Xcode -S . -B ./build -DLUA_INCLUDE_DIR=${{ runner.workspace }}/lua-https/.lua/include -DLUA_LIBRARIES=${{ runner.workspace }}/lua-https/.lua/lib/liblua.a
-        cd ./build
-        xcodebuild
-        xcodebuild -configuration Release
-        mv src/Debug/libhttps.so src/Debug/https.so
-        mv src/Release/libhttps.so src/Release/https.so
-        
-        cd src/Debug
-        lua -l "https" -e "assert(require('https').request('https://httpbin.org/post', {method='post', data='lotsa=data'}) == 200)"
-        cd ../Release
-        lua -l "https" -e "assert(require('https').request('https://httpbin.org/post', {method='post', data='lotsa=data'}) == 200)"
-    - uses: actions/upload-artifact@v2
-      with:
-        name: lua51-macos10.zip
-        path: build/src/**/https.so
-    
-  build_macos_11:
-    runs-on: "macos-11.0"
+jobs:    
+  macOS:
+    runs-on: "macos-latest"
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v2
@@ -80,7 +30,7 @@ jobs:
           name: macos11.zip
           path: build/src/**/https.so
 
-  build_linux:
+  Linux:
     runs-on: "ubuntu-20.04"
     timeout-minutes: 30
     steps:
@@ -105,8 +55,8 @@ jobs:
           name: ubuntu.zip
           path: https.so
 
-  build_windows:
-    runs-on: "windows-2019"
+  Windows:
+    runs-on: "windows-latest"
     timeout-minutes: 30
     steps:
     - uses: actions/checkout@v2
