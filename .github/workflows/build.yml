@@ -1,8 +1,5 @@
 name: "build-and-test"
-on:
-  push:
-    branches:
-      - master
+on: [push, pull_request]
 
 env:
   ACTIONS_ALLOW_UNSECURE_COMMANDS: true  # required for leafo/gh-actions-lua
