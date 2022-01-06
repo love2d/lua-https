@@ -1,15 +1,52 @@
-cmake_minimum_required (VERSION 3.0)
+cmake_minimum_required (VERSION 3.13)
 
-set (HTTPS_SOURCES
+### Basic compilation settings
+set (CMAKE_POSITION_INDEPENDENT_CODE TRUE)
+add_definitions (-DNOMINMAX)
+
+include_directories (
+	${CMAKE_CURRENT_SOURCE_DIR}
+	${CMAKE_CURRENT_BINARY_DIR}
+)
+
+### Compiler-specific flags
+if (MSVC)
+	set (DLLEXPORT "__declspec(dllexport)")
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+	set (DLLEXPORT "__attribute__((visibility(\"default\")))")
+	add_compile_options ("-fvisibility=hidden")
+	add_link_options ("-fvisibility=hidden")
+endif ()
+
+### "Libraries"
+add_library (https MODULE
 	lua/main.cpp
+)
+
+add_library (https-common STATIC
 	common/HTTPRequest.cpp
 	common/HTTPSClient.cpp
 	common/PlaintextConnection.cpp
 )
-set (HTTPS_LINK_LIBRARIES)
-set (HTTPS_INCLUDE_DIRECTORIES
-	${CMAKE_CURRENT_SOURCE_DIR}
-	${CMAKE_CURRENT_BINARY_DIR}
+
+add_library (https-curl STATIC EXCLUDE_FROM_ALL
+	generic/CurlClient.cpp
+)
+
+add_library (https-openssl STATIC EXCLUDE_FROM_ALL
+	generic/OpenSSLConnection.cpp
+)
+
+add_library (https-schannel STATIC EXCLUDE_FROM_ALL
+	windows/SChannelConnection.cpp
+)
+
+add_library (https-nsurl STATIC EXCLUDE_FROM_ALL
+	macos/NSURLClient.mm
+)
+
+add_library (https-android STATIC EXCLUDE_FROM_ALL
+	android/AndroidClient.cpp
 )
 
 ### Flags
@@ -21,7 +58,7 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 	option (USE_ANDROID_BACKEND "Use the Android Java backend (Android-only)" OFF)
 
 	option (USE_WINSOCK "Use winsock instead of BSD sockets (windows-only)" OFF)
-elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+elseif (WIN32)
 	option (USE_CURL_BACKEND "Use the libcurl backend" OFF)
 	option (USE_OPENSSL_BACKEND "Use the openssl backend" OFF)
 	option (USE_SCHANNEL_BACKEND "Use the schannel backend (windows-only)" ON)
@@ -48,57 +85,45 @@ elseif (ANDROID)
 endif ()
 option (DEBUG_SCHANNEL "Enable debug output in schannel backend" OFF)
 
+set_target_properties(https PROPERTIES PREFIX "")
+
 ### Dependencies
+target_link_libraries (https https-common)
 
 find_package (Lua 5.1 REQUIRED)
-list (APPEND HTTPS_INCLUDE_DIRECTORIES ${LUA_INCLUDE_DIR})
-list (APPEND HTTPS_LINK_LIBRARIES ${LUA_LIBRARIES})
+include_directories (${LUA_INCLUDE_DIR})
+target_link_libraries (https ${LUA_LIBRARIES})
 
 if (USE_CURL_BACKEND)
 	find_package (CURL REQUIRED)
-	list (APPEND HTTPS_SOURCES generic/CurlClient.cpp)
-	list (APPEND HTTPS_INCLUDE_DIRECTORIES ${CURL_INCLUDE_DIR})
-	list (APPEND HTTPS_LINK_LIBRARIES ${CURL_LIBRARIES})
+	include_directories (${CURL_INCLUDE_DIR})
+	target_link_libraries (https https-curl ${CURL_LIBRARIES})
 endif ()
 
 if (USE_OPENSSL_BACKEND)
 	find_package (OpenSSL REQUIRED)
-	list (APPEND HTTPS_SOURCES generic/OpenSSLConnection.cpp)
-	list (APPEND HTTPS_INCLUDE_DIRECTORIES ${OPENSSL_INCLUDE_DIR})
-	list (APPEND HTTPS_LINK_LIBRARIES ${OPENSSL_LIBRARIES})
+	include_directories (${OPENSSL_INCLUDE_DIR})
+	target_link_libraries (https https-openssl ${OPENSSL_LIBRARIES})
 endif ()
 
 if (USE_SCHANNEL_BACKEND)
-	list (APPEND HTTPS_SOURCES windows/SChannelConnection.cpp)
-	list (APPEND HTTPS_LINK_LIBRARIES ws2_32 secur32)
+	target_link_libraries (https https-schannel ws2_32 secur32)
 endif ()
 
 if (USE_NSURL_BACKEND)
-	list (APPEND HTTPS_SOURCES macos/NSURLClient.mm)
+	set_target_properties(
+		https-nsurl
+		PROPERTIES
+		MACOSX_BUNDLE YES
+		XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES  
+	)
+	target_link_libraries (https "-framework Foundation")
+	target_link_libraries (https https-nsurl)
 endif ()
 
 if (USE_ANDROID_BACKEND)
-	list (APPEND HTTPS_SOURCES android/AndroidClient.cpp)
-endif ()
-
-### Main library
-add_library (https MODULE ${HTTPS_SOURCES})
-
-### Target options
-target_include_directories (https PRIVATE ${HTTPS_INCLUDE_DIRECTORIES})
-target_compile_definitions (https PRIVATE NOMINMAX)
-target_link_libraries (https ${HTTPS_LINK_LIBRARIES})
-set_target_properties (https PROPERTIES
-	POSITION_INDEPENDENT_CODE ON
-	CXX_VISIBILITY_PRESET hidden
-	PREFIX ""
-)
-
-### Compiler-specific flags
-if (MSVC)
-	set (DLLEXPORT "__declspec(dllexport)")
-elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-	set (DLLEXPORT "__attribute__((visibility(\"default\")))")
+	target_link_libraries (https https-android)
+	message(STATUS "Ensure to add the Java files to your project too!")
 endif ()
 
 ### Generate config.h
