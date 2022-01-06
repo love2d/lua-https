@@ -16,6 +16,9 @@
 #ifdef USE_NSURL_BACKEND
 #	include "macos/NSURLClient.h"
 #endif
+#ifdef USE_ANDROID_BACKEND
+#	include "android/AndroidClient.h"
+#endif
 
 #ifdef USE_CURL_BACKEND
 	static CurlClient curlclient;
@@ -28,6 +31,9 @@
 #endif
 #ifdef USE_NSURL_BACKEND
 	static NSURLClient nsurlclient;
+#endif
+#ifdef USE_ANDROID_BACKEND
+	static AndroidClient androidclient;
 #endif
 
 static HTTPSClient *clients[] = {
@@ -42,6 +48,9 @@ static HTTPSClient *clients[] = {
 #endif
 #ifdef USE_NSURL_BACKEND
 	&nsurlclient,
+#endif
+#ifdef USE_ANDROID_BACKEND
+	&androidclient,
 #endif
 	nullptr,
 };
