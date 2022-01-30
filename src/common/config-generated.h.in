@@ -1,0 +1,7 @@
+#cmakedefine HTTPS_BACKEND_CURL
+#cmakedefine HTTPS_BACKEND_OPENSSL
+#cmakedefine HTTPS_BACKEND_SCHANNEL
+#cmakedefine HTTPS_BACKEND_NSURL
+#cmakedefine HTTPS_BACKEND_ANDROID
+#cmakedefine HTTPS_USE_WINSOCK
+#cmakedefine DEBUG_SCHANNEL

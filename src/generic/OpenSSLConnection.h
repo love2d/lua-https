@@ -1,9 +1,13 @@
 #pragma once
 
+#include "../common/config.h"
+
+#ifdef HTTPS_BACKEND_OPENSSL
+
 #include <openssl/ssl.h>
 
-#include "common/Connection.h"
-#include "common/PlaintextConnection.h"
+#include "../common/Connection.h"
+#include "../common/PlaintextConnection.h"
 
 class OpenSSLConnection : public Connection
 {
@@ -52,3 +56,5 @@ private:
 	};
 	static SSLFuncs ssl;
 };
+
+#endif // HTTPS_BACKEND_OPENSSL

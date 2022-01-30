@@ -1,8 +1,12 @@
 #pragma once
 
+#include "../common/config.h"
+
+#ifdef HTTPS_BACKEND_CURL
+
 #include <curl/curl.h>
 
-#include "common/HTTPSClient.h"
+#include "../common/HTTPSClient.h"
 
 class CurlClient : public HTTPSClient
 {
@@ -26,3 +30,5 @@ private:
 		void (*slist_free_all)(curl_slist *list);
 	} curl;
 };
+
+#endif // HTTPS_BACKEND_CURL

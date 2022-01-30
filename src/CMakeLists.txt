@@ -2,7 +2,6 @@ cmake_minimum_required (VERSION 3.13)
 
 ### Basic compilation settings
 set (CMAKE_POSITION_INDEPENDENT_CODE TRUE)
-add_definitions (-DNOMINMAX)
 
 include_directories (
 	${CMAKE_CURRENT_SOURCE_DIR}
@@ -10,10 +9,7 @@ include_directories (
 )
 
 ### Compiler-specific flags
-if (MSVC)
-	set (DLLEXPORT "__declspec(dllexport)")
-elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-	set (DLLEXPORT "__attribute__((visibility(\"default\")))")
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 	add_compile_options ("-fvisibility=hidden")
 	add_link_options ("-fvisibility=hidden")
 endif ()
@@ -24,6 +20,7 @@ add_library (https MODULE
 )
 
 add_library (https-common STATIC
+	common/HTTPS.cpp
 	common/HTTPRequest.cpp
 	common/HTTPSClient.cpp
 	common/PlaintextConnection.cpp
@@ -95,22 +92,26 @@ include_directories (${LUA_INCLUDE_DIR})
 target_link_libraries (https ${LUA_LIBRARIES})
 
 if (USE_CURL_BACKEND)
+	set(HTTPS_BACKEND_CURL ON)
 	find_package (CURL REQUIRED)
 	include_directories (${CURL_INCLUDE_DIR})
 	target_link_libraries (https https-curl ${CURL_LIBRARIES})
 endif ()
 
 if (USE_OPENSSL_BACKEND)
+	set(HTTPS_BACKEND_OPENSSL ON)
 	find_package (OpenSSL REQUIRED)
 	include_directories (${OPENSSL_INCLUDE_DIR})
 	target_link_libraries (https https-openssl ${OPENSSL_LIBRARIES})
 endif ()
 
 if (USE_SCHANNEL_BACKEND)
+	set(HTTPS_BACKEND_SCHANNEL ON)
 	target_link_libraries (https https-schannel ws2_32 secur32)
 endif ()
 
 if (USE_NSURL_BACKEND)
+	set(HTTPS_BACKEND_NSURL ON)
 	set_target_properties(
 		https-nsurl
 		PROPERTIES
@@ -122,12 +123,14 @@ if (USE_NSURL_BACKEND)
 endif ()
 
 if (USE_ANDROID_BACKEND)
+	set(HTTPS_BACKEND_ANDROID ON)
 	target_link_libraries (https https-android)
 	message(STATUS "Ensure to add the Java files to your project too!")
 endif ()
 
-### Generate config.h
+### Generate config-generated.h
+add_compile_definitions(HTTPS_HAVE_CONFIG_GENERATED_H)
 configure_file (
-	common/config.h.in
-	common/config.h
+	common/config-generated.h.in
+	common/config-generated.h
 )

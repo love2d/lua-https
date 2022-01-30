@@ -1,6 +1,6 @@
-#include "common/config.h"
+#include "config.h"
 #include <cstring>
-#ifndef USE_WINSOCK
+#ifndef HTTPS_USE_WINSOCK
 #	include <netdb.h>
 #	include <unistd.h>
 #	include <sys/types.h>
@@ -8,28 +8,28 @@
 #else
 #	include <winsock2.h>
 #	include <ws2tcpip.h>
-#endif // USE_WINSOCK
+#endif // HTTPS_USE_WINSOCK
 
 #include "PlaintextConnection.h"
 
-#ifdef USE_WINSOCK
+#ifdef HTTPS_USE_WINSOCK
 	static void close(int fd)
 	{
 		closesocket(fd);
 	}
-#endif // USE_WINSOCK
+#endif // HTTPS_USE_WINSOCK
 
 PlaintextConnection::PlaintextConnection()
 	: fd(-1)
 {
-#ifdef USE_WINSOCK
+#ifdef HTTPS_USE_WINSOCK
 	static bool wsaInit = false;
 	if (!wsaInit)
 	{
 		WSADATA data;
 		WSAStartup(MAKEWORD(2, 2), &data);
 	}
-#endif // USE_WINSOCK
+#endif // HTTPS_USE_WINSOCK
 }
 
 PlaintextConnection::~PlaintextConnection()

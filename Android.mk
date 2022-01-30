@@ -11,11 +11,11 @@ LOCAL_ARM_NEON := true
 
 LOCAL_C_INCLUDES := \
 	${LOCAL_PATH}/src \
-	${LOCAL_PATH}/src/android \
-	${LOCAL_PATH}/src/android/ndk-build
+	${LOCAL_PATH}/src/android
 
 LOCAL_SRC_FILES := \
 	src/lua/main.cpp \
+	src/common/HTTPS.cpp \
 	src/common/HTTPRequest.cpp \
 	src/common/HTTPSClient.cpp \
 	src/common/PlaintextConnection.cpp \
