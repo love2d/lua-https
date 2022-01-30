@@ -39,7 +39,7 @@ add_library (https-schannel STATIC EXCLUDE_FROM_ALL
 )
 
 add_library (https-nsurl STATIC EXCLUDE_FROM_ALL
-	macos/NSURLClient.mm
+	apple/NSURLClient.mm
 )
 
 add_library (https-android STATIC EXCLUDE_FROM_ALL
@@ -51,7 +51,7 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 	option (USE_CURL_BACKEND "Use the libcurl backend" ON)
 	option (USE_OPENSSL_BACKEND "Use the openssl backend" ON)
 	option (USE_SCHANNEL_BACKEND "Use the schannel backend (windows-only)" OFF)
-	option (USE_NSURL_BACKEND "Use the NSUrl backend (macos-only)" OFF)
+	option (USE_NSURL_BACKEND "Use the NSUrl backend (apple-only)" OFF)
 	option (USE_ANDROID_BACKEND "Use the Android Java backend (Android-only)" OFF)
 
 	option (USE_WINSOCK "Use winsock instead of BSD sockets (windows-only)" OFF)
@@ -59,7 +59,7 @@ elseif (WIN32)
 	option (USE_CURL_BACKEND "Use the libcurl backend" OFF)
 	option (USE_OPENSSL_BACKEND "Use the openssl backend" OFF)
 	option (USE_SCHANNEL_BACKEND "Use the schannel backend (windows-only)" ON)
-	option (USE_NSURL_BACKEND "Use the NSUrl backend (macos-only)" OFF)
+	option (USE_NSURL_BACKEND "Use the NSUrl backend (apple-only)" OFF)
 	option (USE_ANDROID_BACKEND "Use the Android Java backend (Android-only)" OFF)
 
 	option (USE_WINSOCK "Use winsock instead of BSD sockets (windows-only)" ON)
@@ -67,7 +67,7 @@ elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 	option (USE_CURL_BACKEND "Use the libcurl backend" OFF)
 	option (USE_OPENSSL_BACKEND "Use the openssl backend" OFF)
 	option (USE_SCHANNEL_BACKEND "Use the schannel backend (windows-only)" OFF)
-	option (USE_NSURL_BACKEND "Use the NSUrl backend (macos-only)" ON)
+	option (USE_NSURL_BACKEND "Use the NSUrl backend (apple-only)" ON)
 	option (USE_ANDROID_BACKEND "Use the Android Java backend (Android-only)" OFF)
 
 	option (USE_WINSOCK "Use winsock instead of BSD sockets (windows-only)" OFF)
@@ -75,7 +75,7 @@ elseif (ANDROID)
 	option (USE_CURL_BACKEND "Use the libcurl backend" OFF)
 	option (USE_OPENSSL_BACKEND "Use the openssl backend" OFF)
 	option (USE_SCHANNEL_BACKEND "Use the schannel backend (windows-only)" OFF)
-	option (USE_NSURL_BACKEND "Use the NSUrl backend (macos-only)" OFF)
+	option (USE_NSURL_BACKEND "Use the NSUrl backend (apple-only)" OFF)
 	option (USE_ANDROID_BACKEND "Use the Android Java backend (Android-only)" ON)
 
 	option (USE_WINSOCK "Use winsock instead of BSD sockets (windows-only)" OFF)

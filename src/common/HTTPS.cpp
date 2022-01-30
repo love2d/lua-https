@@ -14,7 +14,7 @@
 #	include "../windows/SChannelConnection.h"
 #endif
 #ifdef HTTPS_BACKEND_NSURL
-#	include "../macos/NSURLClient.h"
+#	include "../apple/NSURLClient.h"
 #endif
 #ifdef HTTPS_BACKEND_ANDROID
 #	include "../android/AndroidClient.h"
