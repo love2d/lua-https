@@ -77,6 +77,8 @@ static int w_request(lua_State *L)
 		lua_pop(L, 1);
 	}
 
+	HTTPSClient::Reply reply;
+
 	try
 	{
 		reply = request(req);

@@ -128,6 +128,10 @@ if (USE_ANDROID_BACKEND)
 	message(STATUS "Ensure to add the Java files to your project too!")
 endif ()
 
+if (USE_WINSOCK)
+	set(HTTPS_USE_WINSOCK ON)
+endif ()
+
 ### Generate config-generated.h
 add_compile_definitions(HTTPS_HAVE_CONFIG_GENERATED_H)
 configure_file (
