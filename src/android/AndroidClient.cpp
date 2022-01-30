@@ -1,6 +1,6 @@
 #include "AndroidClient.h"
 
-#ifdef USE_ANDROID_BACKEND
+#ifdef HTTPS_BACKEND_ANDROID
 
 #include <sstream>
 #include <type_traits>
@@ -209,4 +209,4 @@ jclass AndroidClient::getHTTPSClass() const
 	return httpsClass;
 }
 
-#endif
+#endif // HTTPS_BACKEND_ANDROID

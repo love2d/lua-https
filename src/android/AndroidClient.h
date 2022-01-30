@@ -1,12 +1,12 @@
 #pragma once
 
-#include "common/config.h"
+#include "../common/config.h"
 
-#ifdef USE_ANDROID_BACKEND
+#ifdef HTTPS_BACKEND_ANDROID
 
 #include <jni.h>
 
-#include "common/HTTPSClient.h"
+#include "../common/HTTPSClient.h"
 
 class AndroidClient: public HTTPSClient
 {

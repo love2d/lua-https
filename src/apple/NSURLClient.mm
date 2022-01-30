@@ -1,6 +1,8 @@
-#import <Foundation/Foundation.h>
-
 #include "NSURLClient.h"
+
+#ifdef HTTPS_BACKEND_NSURL
+
+#import <Foundation/Foundation.h>
 
 #if ! __has_feature(objc_arc)
 #error "ARC is off"
@@ -81,4 +83,6 @@ HTTPSClient::Reply NSURLClient::request(const HTTPSClient::Request &req)
 	}
 
 	return reply;
-} }
+}}
+
+#endif // HTTPS_BACKEND_NSURL

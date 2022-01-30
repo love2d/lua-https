@@ -1,59 +1,7 @@
 #include <lua.hpp>
 
-// Sorry for the ifdef soup ahead
-#include "common/config.h"
-#include "common/HTTPSClient.h"
-#include "common/ConnectionClient.h"
-#ifdef USE_CURL_BACKEND
-#	include "generic/CurlClient.h"
-#endif
-#ifdef USE_OPENSSL_BACKEND
-#	include "generic/OpenSSLConnection.h"
-#endif
-#ifdef USE_SCHANNEL_BACKEND
-#	include "windows/SChannelConnection.h"
-#endif
-#ifdef USE_NSURL_BACKEND
-#	include "macos/NSURLClient.h"
-#endif
-#ifdef USE_ANDROID_BACKEND
-#	include "android/AndroidClient.h"
-#endif
-
-#ifdef USE_CURL_BACKEND
-	static CurlClient curlclient;
-#endif
-#ifdef USE_OPENSSL_BACKEND
-	static ConnectionClient<OpenSSLConnection> opensslclient;
-#endif
-#ifdef USE_SCHANNEL_BACKEND
-	static ConnectionClient<SChannelConnection> schannelclient;
-#endif
-#ifdef USE_NSURL_BACKEND
-	static NSURLClient nsurlclient;
-#endif
-#ifdef USE_ANDROID_BACKEND
-	static AndroidClient androidclient;
-#endif
-
-static HTTPSClient *clients[] = {
-#ifdef USE_CURL_BACKEND
-	&curlclient,
-#endif
-#ifdef USE_OPENSSL_BACKEND
-	&opensslclient,
-#endif
-#ifdef USE_SCHANNEL_BACKEND
-	&schannelclient,
-#endif
-#ifdef USE_NSURL_BACKEND
-	&nsurlclient,
-#endif
-#ifdef USE_ANDROID_BACKEND
-	&androidclient,
-#endif
-	nullptr,
-};
+#include "../common/HTTPS.h"
+#include "../common/config.h"
 
 static std::string w_checkstring(lua_State *L, int idx)
 {
@@ -103,8 +51,6 @@ static int w_request(lua_State *L)
 	auto url = w_checkstring(L, 1);
 	HTTPSClient::Request req(url);
 
-	std::string errorMessage("No applicable implementation found");
-	bool foundClient = false;
 	bool advanced = false;
 
 	if (lua_istable(L, 2))
@@ -131,52 +77,38 @@ static int w_request(lua_State *L)
 		lua_pop(L, 1);
 	}
 
-	for (size_t i = 0; clients[i]; ++i)
+	HTTPSClient::Reply reply;
+
+	try
 	{
-		HTTPSClient &client = *clients[i];
-		HTTPSClient::Reply reply;
-
-		if (!client.valid())
-			continue;
-
-		try
-		{
-			reply = client.request(req);
-		}
-		catch(const std::exception& e)
-		{
-			errorMessage = e.what();
-			break;
-		}
-		
-		lua_pushinteger(L, reply.responseCode);
-		w_pushstring(L, reply.body);
-
-		if (advanced)
-		{
-			lua_newtable(L);
-			for (const auto &header : reply.headers)
-			{
-				w_pushstring(L, header.first);
-				w_pushstring(L, header.second);
-				lua_settable(L, -3);
-			}
-		}
-
-		foundClient = true;
-		break;
+		reply = request(req);
 	}
-
-	if (!foundClient)
+	catch (const std::exception& e)
 	{
+		std::string errorMessage = e.what();
 		lua_pushnil(L);
 		lua_pushstring(L, errorMessage.c_str());
+		return 2;
 	}
 
-	return (advanced && foundClient) ? 3 : 2;
+	lua_pushinteger(L, reply.responseCode);
+	w_pushstring(L, reply.body);
+
+	if (advanced)
+	{
+		lua_newtable(L);
+		for (const auto &header : reply.headers)
+		{
+			w_pushstring(L, header.first);
+			w_pushstring(L, header.second);
+			lua_settable(L, -3);
+		}
+	}
+
+	return advanced ? 3 : 2;
 }
 
-extern "C" int DLLEXPORT luaopen_https(lua_State *L)
+extern "C" int HTTPS_DLLEXPORT luaopen_https(lua_State *L)
 {
 	lua_newtable(L);
 

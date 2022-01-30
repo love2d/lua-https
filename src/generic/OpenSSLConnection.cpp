@@ -1,6 +1,8 @@
-#include <dlfcn.h>
-
 #include "OpenSSLConnection.h"
+
+#ifdef HTTPS_BACKEND_OPENSSL
+
+#include <dlfcn.h>
 
 // Not present in openssl 1.1 headers
 #define SSL_CTRL_OPTIONS 32
@@ -142,3 +144,5 @@ void OpenSSLConnection::close()
 }
 
 OpenSSLConnection::SSLFuncs OpenSSLConnection::ssl;
+
+#endif // HTTPS_BACKEND_OPENSSL

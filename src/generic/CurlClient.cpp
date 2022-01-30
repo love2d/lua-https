@@ -1,9 +1,11 @@
+#include "CurlClient.h"
+
+#ifdef HTTPS_BACKEND_CURL
+
 #include <dlfcn.h>
 #include <stdexcept>
 #include <sstream>
 #include <vector>
-
-#include "CurlClient.h"
 
 CurlClient::Curl::Curl()
 {
@@ -120,3 +122,5 @@ HTTPSClient::Reply CurlClient::request(const HTTPSClient::Request &req)
 }
 
 CurlClient::Curl CurlClient::curl;
+
+#endif // HTTPS_BACKEND_CURL

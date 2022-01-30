@@ -1,4 +1,10 @@
 #define SECURITY_WIN32
+#define NOMINMAX
+
+#include "SChannelConnection.h"
+
+#ifdef HTTPS_BACKEND_SCHANNEL
+
 #include <windows.h>
 #include <security.h>
 #include <schnlsp.h>
@@ -6,9 +12,6 @@
 #include <algorithm>
 #include <memory>
 #include <array>
-
-#include "common/config.h"
-#include "SChannelConnection.h"
 
 #ifndef SCH_USE_STRONG_CRYPTO
 #	define SCH_USE_STRONG_CRYPTO 0x00400000
@@ -459,3 +462,5 @@ bool SChannelConnection::valid()
 {
 	return true;
 }
+
+#endif // HTTPS_BACKEND_SCHANNEL

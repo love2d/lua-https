@@ -1,7 +1,11 @@
 #pragma once
 
-#include "common/Connection.h"
-#include "common/PlaintextConnection.h"
+#include "../common/config.h"
+
+#ifdef HTTPS_BACKEND_SCHANNEL
+
+#include "../common/Connection.h"
+#include "../common/PlaintextConnection.h"
 
 #include <vector>
 
@@ -29,3 +33,5 @@ private:
 	size_t decrypt(char *buffer, size_t size, bool recurse = true);
 	void destroyContext();
 };
+
+#endif // HTTPS_BACKEND_SCHANNEL
