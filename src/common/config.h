@@ -1,7 +1,7 @@
 #pragma once
 
 #if defined(HTTPS_HAVE_CONFIG_GENERATED_H)
-	#include "config-generated.h"
+	#include "common/config-generated.h"
 #elif defined(WIN32) || defined(_WIN32)
 	#define HTTPS_BACKEND_SCHANNEL
 	#define HTTPS_USE_WINSOCK
