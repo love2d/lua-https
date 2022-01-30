@@ -26,7 +26,7 @@
 
 #if defined(WIN32) || defined(_WIN32) || defined(__CYGWIN__)
 	#define HTTPS_DLLEXPORT __declspec(dllexport)
-#elif defined(__GNUC_) || defined(__clang__)
+#elif defined(__GNUC__) || defined(__clang__)
 	#define HTTPS_DLLEXPORT __attribute__ ((visibility("default")))
 #else
 	#define HTTPS_DLLEXPORT
