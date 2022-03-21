@@ -138,3 +138,6 @@ configure_file (
 	common/config-generated.h.in
 	common/config-generated.h
 )
+
+### Install target
+install(TARGETS https DESTINATION .)
