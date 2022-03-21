@@ -10,7 +10,7 @@ extern "C"
 #include "../common/HTTPS.h"
 #include "../common/config.h"
 
-static std::set<std::string> validMethod = {"GET", "HEAD", "POST", "PUT", "DELETE", "PATCH"};
+static std::set<std::string> validMethod {"GET", "HEAD", "POST", "PUT", "DELETE", "PATCH"};
 
 static std::string w_checkstring(lua_State *L, int idx)
 {
