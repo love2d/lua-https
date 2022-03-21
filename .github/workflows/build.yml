@@ -52,31 +52,49 @@ jobs:
           path: https.so
 
   Windows:
-    runs-on: "windows-latest"
-    timeout-minutes: 30
+    runs-on: "windows-2019"
+    strategy:
+      matrix:
+        arch:
+        - Win32
+        - x64
     steps:
-    - uses: actions/checkout@v2
-    - uses: carlosperate/download-file-action@v1.0.3
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Download LuaJIT
+      uses: actions/checkout@v3
       with:
-        file-url: "https://master.dl.sourceforge.net/project/luabinaries/5.1.5/Windows%20Libraries/Dynamic/lua-5.1.5_Win64_dll14_lib.zip"
-        file-name: "lua51.zip"
-    - uses: carlosperate/download-file-action@v1.0.3
-      with:
-        file-url: "https://iweb.dl.sourceforge.net/project/luabinaries/5.1.5/Tools%20Executables/lua-5.1.5_Win64_bin.zip"
-        file-name: "lua51bin.zip"
-    - run: |
-        7z x lua51.zip -o${{ runner.workspace }}/lua-51
-        7z x lua51bin.zip -o${{ runner.workspace }}/lua-51/bin
-    - uses: ashutoshvarma/action-cmake-build@master
-      with:
-        build-dir: ${{ runner.workspace }}/build          
-        build-type: Release
-        # Extra options pass to cmake while configuring project
-        configure-options: "-H. -A x64 -T v140 -DLUA_INCLUDE_DIR=${{ runner.workspace }}/lua-51/include -DLUA_LIBRARIES=${{ runner.workspace }}/lua-51/lua5.1.lib"
-    - run: |
-        cd ${{ runner.workspace }}/build/src/Release
-        ${{ runner.workspace }}/lua-51/bin/lua5.1.exe -l "https" -e "assert(require('https').request('https://httpbin.org/post', {method='post', data='lotsa=data'}) == 200)"
+        repository: LuaJIT/LuaJIT
+        ref: v2.1
+        path: LuaJIT
+    - name: Compile LuaJIT
+      shell: cmd
+      env:
+        BUILD_ARCH: ${{ matrix.arch }}
+      run: |
+        rem Compile LuaJIT using MSVC Command Prompt
+        rem https://github.com/actions/virtual-environments/blob/main/images/win/Windows2019-Readme.md#visual-studio-enterprise-2019
+        set VCBT="C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat"
+        if %BUILD_ARCH% == Win32 (
+          call %VCBT% x86
+        ) else (
+          call %VCBT% x86_amd64
+        )
+        cd LuaJIT\src
+        msvcbuild.bat amalg
+    - name: Configure
+      shell: cmd
+      run: cmake -Bbuild -S. -DCMAKE_INSTALL_PREFIX=%CD%\install -T v142 -A ${{ matrix.arch }} -DLUA_INCLUDE_DIR=%CD%\LuaJIT\src -DLUA_LIBRARIES=%CD%\LuaJIT\src\lua51.lib
+    - name: Build
+      shell: cmd
+      run: cmake --build build --config Release --target install
+    - name: Copy https.dll For testing
+      shell: cmd
+      run: copy /y install\https.dll LuaJIT\src\https.dll
+    - name: Test
+      shell: cmd
+      run: cd LuaJIT\src && luajit ..\..\example\example.lua
     - uses: actions/upload-artifact@v2
       with:
-        name: https-windows.zip
-        path: ${{ runner.workspace }}/build/src/**/https.dll
+        name: https-windows-${{ matrix.arch }}.zip
+        path: install\https.dll
