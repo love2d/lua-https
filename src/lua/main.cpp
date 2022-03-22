@@ -10,7 +10,13 @@ extern "C"
 #include "../common/HTTPS.h"
 #include "../common/config.h"
 
-static std::set<std::string> validMethod {"GET", "HEAD", "POST", "PUT", "DELETE", "PATCH"};
+static std::string validMethod[] = {"GET", "HEAD", "POST", "PUT", "DELETE", "PATCH"};
+
+static int str_toupper(char c)
+{
+	unsigned char uc = (unsigned char) c;
+	return toupper(uc);
+}
 
 static std::string w_checkstring(lua_State *L, int idx)
 {
@@ -41,13 +47,15 @@ static void w_readheaders(lua_State *L, int idx, HTTPSClient::header_map &header
 
 static std::string w_optmethod(lua_State *L, int idx, const std::string &defaultMethod)
 {
+	std::string *const validMethodEnd = validMethod + sizeof(validMethod) / sizeof(std::string);
+
 	if (lua_isnoneornil(L, idx))
 		return defaultMethod;
 
 	std::string str = w_checkstring(L, idx);
-	std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) { return toupper(c); });
+	std::transform(str.begin(), str.end(), str.begin(), str_toupper);
 
-	if (validMethod.find(str) == validMethod.end())
+	if (std::find(validMethod, validMethodEnd, str) == validMethodEnd)
 		luaL_argerror(L, idx, "expected one of \"get\", \"head\", \"post\", \"put\", \"delete\", or \"patch\"");
 
 	return str;
