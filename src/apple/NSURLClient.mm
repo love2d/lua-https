@@ -35,7 +35,6 @@ HTTPSClient::Reply NSURLClient::request(const HTTPSClient::Request &req)
 	{
 		bodydata = [NSData dataWithBytesNoCopy:(void*) req.postdata.data() length:req.postdata.size() freeWhenDone:NO];
 		[request setHTTPBody:bodydata];
-		break;
 	}
 
 	for (auto &header : req.headers)
