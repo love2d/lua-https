@@ -134,7 +134,6 @@ class LuaHTTPS {
         // Set post data
         if (postData != null && canSendData()) {
             connection.setDoOutput(true);
-            connection.setChunkedStreamingMode(0);
 
             try {
                 OutputStream out = connection.getOutputStream();
