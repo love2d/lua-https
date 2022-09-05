@@ -1,58 +1,60 @@
-name: "build-and-test"
+name: "Build & Test"
 on: [push, pull_request]
-
-env:
-  ACTIONS_ALLOW_UNSECURE_COMMANDS: true  # required for leafo/gh-actions-lua
 
 jobs:    
   macOS:
-    runs-on: "macos-latest"
+    runs-on: macos-latest
     timeout-minutes: 30
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "10.9"
     steps:
-      - uses: actions/checkout@v2
-      - uses: leafo/gh-actions-lua@v7
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Lua 5.1
+        uses: leafo/gh-actions-lua@v9.1.0
         with:
           luaVersion: "5.1.5"
-      - run: |
-          export MACOSX_DEPLOYMENT_TARGET=10.9
-          cmake -G Xcode -S . -B ./build -DLUA_INCLUDE_DIR=${{ runner.workspace }}/lua-https/.lua/include -DLUA_LIBRARIES=${{ runner.workspace }}/lua-https/.lua/lib/liblua.a
-          cd ./build
-          xcodebuild -configuration Release -scheme https
-
-          cd src/Release
-          lua -l "https" -e "assert(require('https').request('https://httpbin.org/post', {method='post', data='lotsa=data'}) == 200)"
-      - uses: actions/upload-artifact@v2
+      - name: Configure
+        run: cmake -Bbuild -S. -G Xcode -DLUA_INCLUDE_DIR=$PWD/.lua/include -DLUA_LIBRARIES=$PWD/.lua/lib/liblua.a
+      - name: Build
+        working-directory: build
+        run: xcodebuild -configuration Release -scheme https
+      - name: Test
+        working-directory: ./build/src/Release
+        run: lua -l "https" -e "assert(require('https').request('https://httpbin.org/post', {method='post', data='lotsa=data'}) == 200)"
+      - uses: actions/upload-artifact@v3
         with:
           name: https-macos.zip
           path: build/src/**/https.so
 
   Linux:
-    runs-on: "ubuntu-20.04"
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v2
-      - name: Build and test
-        run: |
-          # install dependencies
-          sudo apt-get install -y cmake lua5.1 liblua5.1-0-dev luajit libluajit-5.1-dev libcurl4-openssl-dev g++ libssl-dev
-            
-          # build
-          cmake -S . -B ./build
-          cd build
-          make
-          cd ..
-          cp build/src/https.so ./https.so
-          
-          # Test
-          lua -l "https" -e "assert(require('https').request('https://httpbin.org/post', {method='post', data='lotsa=data'}) == 200)"
-          luajit -l "https" -e "assert(require('https').request('https://httpbin.org/post', {method='post', data='lotsa=data'}) == 200)"
-      - uses: actions/upload-artifact@v2
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Update APT Repository
+        run: sudo apt-get update
+      - name: Install Dependencies
+        run: sudo apt-get install -y lua5.1 luajit liblua5.1-0-dev libcurl4-openssl-dev g++ libssl-dev
+      - name: Configure
+        run: cmake -Bbuild -S. -DCMAKE_INSTALL_PREFIX=$PWD/install -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      - name: Build
+        run: cmake --build build --config RelWithDebInfo --target install -j$(nproc)
+      - name: Test (Lua)
+        working-directory: ./install
+        run: lua -l "https" -e "assert(require('https').request('https://httpbin.org/post', {method='post', data='lotsa=data'}) == 200)"
+      - name: Test (LuaJIT)
+        working-directory: ./install
+        run: luajit -l "https" -e "assert(require('https').request('https://httpbin.org/post', {method='post', data='lotsa=data'}) == 200)"
+      - name: Artifact
+        uses: actions/upload-artifact@v3
         with:
           name: https-ubuntu.zip
-          path: https.so
+          path: install/https.so
 
   Windows:
-    runs-on: "windows-2019"
+    runs-on: windows-latest
     strategy:
       matrix:
         arch:
@@ -67,24 +69,19 @@ jobs:
         repository: LuaJIT/LuaJIT
         ref: v2.1
         path: LuaJIT
+    - name: Configure MSVC Developer Command Prompt
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: ${{ matrix.arch }}
     - name: Compile LuaJIT
       shell: cmd
+      working-directory: ./LuaJIT/src
       env:
         BUILD_ARCH: ${{ matrix.arch }}
-      run: |
-        rem Compile LuaJIT using MSVC Command Prompt
-        rem https://github.com/actions/virtual-environments/blob/main/images/win/Windows2019-Readme.md#visual-studio-enterprise-2019
-        set VCBT="C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat"
-        if %BUILD_ARCH% == Win32 (
-          call %VCBT% x86
-        ) else (
-          call %VCBT% x86_amd64
-        )
-        cd LuaJIT\src
-        msvcbuild.bat amalg
+      run: msvcbuild.bat amalg
     - name: Configure
       shell: cmd
-      run: cmake -Bbuild -S. -DCMAKE_INSTALL_PREFIX=%CD%\install -T v142 -A ${{ matrix.arch }} -DLUA_INCLUDE_DIR=%CD%\LuaJIT\src -DLUA_LIBRARIES=%CD%\LuaJIT\src\lua51.lib
+      run: cmake -Bbuild -S. -DCMAKE_INSTALL_PREFIX=%CD%\install -A ${{ matrix.arch }} -DLUA_INCLUDE_DIR=%CD%\LuaJIT\src -DLUA_LIBRARIES=%CD%\LuaJIT\src\lua51.lib
     - name: Build
       shell: cmd
       run: cmake --build build --config Release --target install
@@ -93,8 +90,10 @@ jobs:
       run: copy /y install\https.dll LuaJIT\src\https.dll
     - name: Test
       shell: cmd
-      run: cd LuaJIT\src && luajit ..\..\example\example.lua
-    - uses: actions/upload-artifact@v2
+      working-directory: ./LuaJIT/src
+      run: luajit ..\..\example\example.lua
+    - name: Artifact
+      uses: actions/upload-artifact@v3
       with:
         name: https-windows-${{ matrix.arch }}.zip
-        path: install\https.dll
+        path: install/https.dll
