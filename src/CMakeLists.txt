@@ -14,6 +14,17 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 	add_link_options ("-fvisibility=hidden")
 endif ()
 
+### Dependencies
+find_package (LuaJIT)
+if (LUAJIT_INCLUDE_DIR)
+	set(LUA_INCLUDE_DIR ${LUAJIT_INCLUDE_DIR})
+	set(LUA_LIBRARIES ${LUAJIT_LIBRARIES})
+else ()
+	find_package (Lua 5.1 REQUIRED)
+endif ()
+
+include_directories (${LUA_INCLUDE_DIR})
+
 ### "Libraries"
 add_library (https MODULE
 	lua/main.cpp
@@ -63,6 +74,9 @@ elseif (WIN32)
 	option (USE_ANDROID_BACKEND "Use the Android Java backend (Android-only)" OFF)
 
 	option (USE_WINSOCK "Use winsock instead of BSD sockets (windows-only)" ON)
+
+	# Windows needs to link with Lua libraries
+	target_link_libraries(https ${LUA_LIBRARIES})
 elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 	option (USE_CURL_BACKEND "Use the libcurl backend" OFF)
 	option (USE_OPENSSL_BACKEND "Use the openssl backend" OFF)
@@ -71,6 +85,13 @@ elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 	option (USE_ANDROID_BACKEND "Use the Android Java backend (Android-only)" OFF)
 
 	option (USE_WINSOCK "Use winsock instead of BSD sockets (windows-only)" OFF)
+
+	if (NOT IOS)
+		# macOS needs -undefined dynamic_lookup
+		target_compile_definitions(https -undefined dynamic_lookup)
+	else ()
+		target_link_libraries(https ${LUA_LIBRARIES})
+	endif ()
 elseif (ANDROID)
 	option (USE_CURL_BACKEND "Use the libcurl backend" OFF)
 	option (USE_OPENSSL_BACKEND "Use the openssl backend" OFF)
@@ -79,24 +100,15 @@ elseif (ANDROID)
 	option (USE_ANDROID_BACKEND "Use the Android Java backend (Android-only)" ON)
 
 	option (USE_WINSOCK "Use winsock instead of BSD sockets (windows-only)" OFF)
+
+	# Android needs to link with Lua libraries
+	target_link_libraries(https ${LUA_LIBRARIES})
 endif ()
 option (DEBUG_SCHANNEL "Enable debug output in schannel backend" OFF)
 
 set_target_properties(https PROPERTIES PREFIX "")
 
-### Dependencies
 target_link_libraries (https https-common)
-
-find_package (LuaJIT)
-if (LUAJIT_INCLUDE_DIR)
-	set(LUA_INCLUDE_DIR ${LUAJIT_INCLUDE_DIR})
-	set(LUA_LIBRARIES ${LUAJIT_LIBRARIES})
-else ()
-	find_package (Lua 5.1 REQUIRED)
-endif ()
-
-include_directories (${LUA_INCLUDE_DIR})
-target_link_libraries (https ${LUA_LIBRARIES})
 
 if (USE_CURL_BACKEND)
 	set(HTTPS_BACKEND_CURL ON)
