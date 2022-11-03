@@ -87,7 +87,14 @@ set_target_properties(https PROPERTIES PREFIX "")
 ### Dependencies
 target_link_libraries (https https-common)
 
-find_package (Lua 5.1 REQUIRED)
+find_package (LuaJIT)
+if (LUAJIT_INCLUDE_DIR)
+	set(LUA_INCLUDE_DIR ${LUAJIT_INCLUDE_DIR})
+	set(LUA_LIBRARIES ${LUAJIT_LIBRARIES})
+else ()
+	find_package (Lua 5.1 REQUIRED)
+endif ()
+
 include_directories (${LUA_INCLUDE_DIR})
 target_link_libraries (https ${LUA_LIBRARIES})
 
