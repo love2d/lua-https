@@ -1,5 +1,3 @@
-package.cpath="./?.dll"
-
 local https = require "https"
 
 do
