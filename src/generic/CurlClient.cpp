@@ -178,6 +178,9 @@ HTTPSClient::Reply CurlClient::request(const HTTPSClient::Request &req)
 			newHeaders["Content-Type"] = "application/x-www-form-urlencoded";
 	}
 
+	if (method == "HEAD")
+		curl.easy_setopt(handle, CURLOPT_NOBODY, 1L);
+
 	// Curl doesn't copy memory, keep the strings around
 	std::vector<std::string> lines;
 	for (auto &header : newHeaders)
