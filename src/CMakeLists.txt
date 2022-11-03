@@ -88,7 +88,7 @@ elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 
 	if (NOT IOS)
 		# macOS needs -undefined dynamic_lookup
-		target_compile_definitions(https -undefined dynamic_lookup)
+		target_link_options(https PRIVATE -undefined dynamic_lookup)
 	else ()
 		target_link_libraries(https ${LUA_LIBRARIES})
 	endif ()
