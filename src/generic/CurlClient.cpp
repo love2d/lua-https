@@ -1,12 +1,23 @@
+#ifdef _WIN32
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#endif
+
 #include "CurlClient.h"
 
 #ifdef HTTPS_BACKEND_CURL
 
 #include <algorithm>
-#include <dlfcn.h>
 #include <stdexcept>
 #include <sstream>
 #include <vector>
+
+// Dynamic library loader
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <dlfcn.h>
+#endif
 
 typedef struct StringReader
 {
@@ -14,38 +25,56 @@ typedef struct StringReader
 	size_t pos;
 } StringReader;
 
-template<typename T> bool loadSymbol(void *handle, const char *name, T &out)
+template <class T>
+static inline bool loadSymbol(T &var, void *handle, const char *name)
 {
-	out = (T) dlsym(handle, name);
-	return out != nullptr;
+#ifdef _WIN32
+	var = (T) GetProcAddress((HMODULE) handle, name);
+#else
+	var = (T) dlsym(handle, name);
+#endif
+	return var != nullptr;
 }
 
 CurlClient::Curl::Curl()
-: loaded(false)
+: handle(nullptr)
+, loaded(false)
+, global_cleanup(nullptr)
+, easy_init(nullptr)
+, easy_cleanup(nullptr)
+, easy_setopt(nullptr)
+, easy_perform(nullptr)
+, easy_getinfo(nullptr)
+, slist_append(nullptr)
+, slist_free_all(nullptr)
 {
-	void *handle = dlopen("libcurl.so", RTLD_LAZY);
+#ifdef _WIN32
+	handle = (void *) LoadLibraryA("libcurl.dll");
+#else
+	handle = dlopen("libcurl.so.4", RTLD_LAZY);
+#endif
 	if (!handle)
 		return;
 
 	// Load symbols
-	void(*global_init)(long) = nullptr;
-	if (!loadSymbol(handle, "curl_global_init", global_init))
+	decltype(&curl_global_init) global_init = nullptr;
+	if (!loadSymbol(global_init, handle, "curl_global_init"))
 		return;
-	if (!loadSymbol(handle, "curl_global_cleanup", global_cleanup))
+	if (!loadSymbol(global_cleanup, handle, "curl_global_cleanup"))
 		return;
-	if (!loadSymbol(handle, "curl_easy_init", easy_init))
+	if (!loadSymbol(easy_init, handle, "curl_easy_init"))
 		return;
-	if (!loadSymbol(handle, "curl_easy_cleanup", easy_cleanup))
+	if (!loadSymbol(easy_cleanup, handle, "curl_easy_cleanup"))
 		return;
-	if (!loadSymbol(handle, "curl_easy_setopt", easy_setopt))
+	if (!loadSymbol(easy_setopt, handle, "curl_easy_setopt"))
 		return;
-	if (!loadSymbol(handle, "curl_easy_perform", easy_perform))
+	if (!loadSymbol(easy_perform, handle, "curl_easy_perform"))
 		return;
-	if (!loadSymbol(handle, "curl_easy_getinfo", easy_getinfo))
+	if (!loadSymbol(easy_getinfo, handle, "curl_easy_getinfo"))
 		return;
-	if (!loadSymbol(handle, "curl_slist_append", slist_append))
+	if (!loadSymbol(slist_append, handle, "curl_slist_append"))
 		return;
-	if (!loadSymbol(handle, "curl_slist_free_all", slist_free_all))
+	if (!loadSymbol(slist_free_all, handle, "curl_slist_free_all"))
 		return;
 
 	global_init(CURL_GLOBAL_DEFAULT);
@@ -56,6 +85,13 @@ CurlClient::Curl::~Curl()
 {
 	if (loaded)
 		global_cleanup();
+
+	if (handle)
+#ifdef _WIN32
+		FreeLibrary((HMODULE) handle);
+#else
+		dlclose(handle);
+#endif
 }
 
 static char toUppercase(char c)
@@ -69,12 +105,13 @@ static size_t stringReader(char *ptr, size_t size, size_t nmemb, StringReader *r
 	const char *data = reader->str->data();
 	size_t len = reader->str->length();
 	size_t maxCount = (len - reader->pos) / size;
-	size_t desiredBytes = std::min(maxCount, nmemb) * size;
+	size_t desiredCount = std::min(maxCount, nmemb);
+	size_t desiredBytes = desiredCount * size;
 
 	std::copy(data + reader->pos, data + desiredBytes, ptr);
 	reader->pos += desiredBytes;
 
-	return desiredBytes;
+	return desiredCount;
 }
 
 static size_t stringstreamWriter(char *ptr, size_t size, size_t nmemb, std::stringstream *ss)
@@ -109,6 +146,9 @@ HTTPSClient::Reply CurlClient::request(const HTTPSClient::Request &req)
 	Reply reply;
 	reply.responseCode = 0;
 
+	// Use sensible default header for later
+	HTTPSClient::header_map newHeaders = req.headers;
+
 	CURL *handle = curl.easy_init();
 	if (!handle)
 		throw std::runtime_error("Could not create curl request");
@@ -117,13 +157,13 @@ HTTPSClient::Reply CurlClient::request(const HTTPSClient::Request &req)
 	curl.easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
 
 	std::string method = req.method;
-	if (method == "")
-		method = "GET";
+	if (method.empty())
+		method = req.postdata.size() > 0 ? "POST" : "GET";
 	else
 		std::transform(method.begin(), method.end(), method.begin(), toUppercase);
 	curl.easy_setopt(handle, CURLOPT_CUSTOMREQUEST, method.c_str());
 
-	StringReader reader;
+	StringReader reader {};
 
 	if (req.postdata.size() > 0 && (method != "GET" && method != "HEAD"))
 	{
@@ -133,11 +173,14 @@ HTTPSClient::Reply CurlClient::request(const HTTPSClient::Request &req)
 		curl.easy_setopt(handle, CURLOPT_READFUNCTION, stringReader);
 		curl.easy_setopt(handle, CURLOPT_READDATA, &reader);
 		curl.easy_setopt(handle, CURLOPT_INFILESIZE_LARGE, (curl_off_t) req.postdata.length());
+
+		if (newHeaders.count("Content-Type") == 0)
+			newHeaders["Content-Type"] = "application/x-www-form-urlencoded";
 	}
 
 	// Curl doesn't copy memory, keep the strings around
 	std::vector<std::string> lines;
-	for (auto &header : req.headers)
+	for (auto &header : newHeaders)
 	{
 		std::stringstream line;
 		line << header.first << ": " << header.second;

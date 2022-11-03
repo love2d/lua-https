@@ -19,6 +19,7 @@ private:
 	{
 		Curl();
 		~Curl();
+		void *handle;
 		bool loaded;
 
 		decltype(&curl_global_cleanup) global_cleanup;
