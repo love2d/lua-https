@@ -16,9 +16,9 @@ endif ()
 
 ### Dependencies
 find_package (LuaJIT)
-if (LUAJIT_INCLUDE_DIR)
+if (LUAJIT_FOUND)
 	set(LUA_INCLUDE_DIR ${LUAJIT_INCLUDE_DIR})
-	set(LUA_LIBRARIES ${LUAJIT_LIBRARIES})
+	set(LUA_LIBRARIES ${LUAJIT_LIBRARY})
 else ()
 	find_package (Lua 5.1 REQUIRED)
 endif ()
