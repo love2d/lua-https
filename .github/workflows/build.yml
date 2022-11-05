@@ -56,9 +56,9 @@ jobs:
       - name: Install Dependencies
         run: sudo apt-get install -y lua5.1 luajit liblua5.1-0-dev libcurl4-openssl-dev g++ libssl-dev
       - name: Configure
-        run: cmake -Bbuild -S. -DCMAKE_INSTALL_PREFIX=$PWD/install -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_CURL_BACKEND=${{ matrix.mode.curl }} -DUSE_OPENSSL_BACKEND=${{ matrix.mode.openssl }}
+        run: cmake -Bbuild -S. -DCMAKE_INSTALL_PREFIX=$PWD/install -DUSE_CURL_BACKEND=${{ matrix.mode.curl }} -DUSE_OPENSSL_BACKEND=${{ matrix.mode.openssl }}
       - name: Build
-        run: cmake --build build --config RelWithDebInfo --target install -j$(nproc)
+        run: cmake --build build --config Release --target install -j$(nproc)
       - name: Test (Lua)
         if: matrix.mode.artifact == 0
         working-directory: ./install
