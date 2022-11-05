@@ -3,4 +3,5 @@
 *.dll
 *.exe
 *.so
-build
+.vscode/
+build*/
