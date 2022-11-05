@@ -155,17 +155,11 @@ HTTPSClient::Reply CurlClient::request(const HTTPSClient::Request &req)
 
 	curl.easy_setopt(handle, CURLOPT_URL, req.url.c_str());
 	curl.easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
-
-	std::string method = req.method;
-	if (method.empty())
-		method = req.postdata.size() > 0 ? "POST" : "GET";
-	else
-		std::transform(method.begin(), method.end(), method.begin(), toUppercase);
-	curl.easy_setopt(handle, CURLOPT_CUSTOMREQUEST, method.c_str());
+	curl.easy_setopt(handle, CURLOPT_CUSTOMREQUEST, req.method.c_str());
 
 	StringReader reader {};
 
-	if (req.postdata.size() > 0 && (method != "GET" && method != "HEAD"))
+	if (req.postdata.size() > 0 && (req.method != "GET" && req.method != "HEAD"))
 	{
 		reader.str = &req.postdata;
 		reader.pos = 0;
@@ -173,12 +167,9 @@ HTTPSClient::Reply CurlClient::request(const HTTPSClient::Request &req)
 		curl.easy_setopt(handle, CURLOPT_READFUNCTION, stringReader);
 		curl.easy_setopt(handle, CURLOPT_READDATA, &reader);
 		curl.easy_setopt(handle, CURLOPT_INFILESIZE_LARGE, (curl_off_t) req.postdata.length());
-
-		if (newHeaders.count("Content-Type") == 0)
-			newHeaders["Content-Type"] = "application/x-www-form-urlencoded";
 	}
 
-	if (method == "HEAD")
+	if (req.method == "HEAD")
 		curl.easy_setopt(handle, CURLOPT_NOBODY, 1L);
 
 	// Curl doesn't copy memory, keep the strings around
