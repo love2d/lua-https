@@ -25,6 +25,8 @@ public:
 	static bool valid();
 
 private:
+	static bool useWindows11Codepath;
+
 	PlaintextConnection socket;
 	CtxtHandle *context;
 	std::vector<char> encRecvBuffer;
@@ -32,6 +34,9 @@ private:
 
 	size_t decrypt(char *buffer, size_t size, bool recurse = true);
 	void destroyContext();
+	bool acquire(void *credHandle);
+	bool acquireWindows11(void *credHandle);
+	bool acquireOldWindows(void *credHandle);
 };
 
 #endif // HTTPS_BACKEND_SCHANNEL

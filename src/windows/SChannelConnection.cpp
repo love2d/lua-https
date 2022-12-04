@@ -1,4 +1,5 @@
 #define SECURITY_WIN32
+#define SCHANNEL_USE_BLACKLISTS
 #define NOMINMAX
 
 #include "SChannelConnection.h"
@@ -6,6 +7,7 @@
 #ifdef HTTPS_BACKEND_SCHANNEL
 
 #include <windows.h>
+#include <subauth.h>
 #include <security.h>
 #include <schnlsp.h>
 #include <assert.h>
@@ -70,9 +72,33 @@ static size_t dequeue(std::vector<char> &buffer, char *data, size_t size)
 	return size;
 }
 
+bool SChannelConnection::useWindows11Codepath = false;
+
 SChannelConnection::SChannelConnection()
 	: context(nullptr)
 {
+	static bool codepathChecked = false;
+
+	if (!codepathChecked)
+	{
+		codepathChecked = true;
+
+		// GetVersionEx is subject to manifestation, so do VerifyVersionInfo.
+		// There's no other way other than querying from ntdll directly.
+		NTSTATUS(WINAPI *RtlGetVersion)(LPOSVERSIONINFOEXW);
+		RtlGetVersion = (decltype(RtlGetVersion)) GetProcAddress(GetModuleHandleA("ntdll"), "RtlGetVersion");
+
+		if (RtlGetVersion)
+		{
+			OSVERSIONINFOEXW version = {sizeof(OSVERSIONINFOEXW)};
+			RtlGetVersion(&version);
+
+			useWindows11Codepath = version.dwMajorVersion == 10
+			                    && (version.dwMinorVersion == 0 && version.dwBuildNumber >= 17763)
+			                    || version.dwMinorVersion > 0
+			                    || version.dwMajorVersion > 10;
+		}
+	}
 }
 
 SChannelConnection::~SChannelConnection()
@@ -148,22 +174,15 @@ bool SChannelConnection::connect(const std::string &hostname, uint16_t port)
 		return false;
 	debug << "Connected\n";
 
-	SCHANNEL_CRED cred;
-	memset(&cred, 0, sizeof(cred));
-
-	cred.dwVersion = SCHANNEL_CRED_VERSION;
-	cred.grbitEnabledProtocols = SP_PROT_TLS1_CLIENT | SP_PROT_TLS1_1_CLIENT | SP_PROT_TLS1_2_CLIENT;
-	cred.dwFlags = SCH_CRED_AUTO_CRED_VALIDATION | SCH_CRED_NO_DEFAULT_CREDS | SCH_USE_STRONG_CRYPTO | SCH_CRED_REVOCATION_CHECK_CHAIN;
-
 	CredHandle credHandle;
-	if (AcquireCredentialsHandle(nullptr, (char*) UNISP_NAME, SECPKG_CRED_OUTBOUND, nullptr, &cred, nullptr, nullptr, &credHandle, nullptr) != SEC_E_OK)
+	if (!acquire(&credHandle))
 	{
 		debug << "Failed to acquire handle\n";
 		socket.close();
 		return false;
 	}
-	debug << "Acquired handle\n";
 
+	debug << "Acquired handle\n";
 
 	static constexpr size_t bufferSize = 8192;
 	bool done = false, success = false, contextCreated = false;
@@ -379,6 +398,9 @@ size_t SChannelConnection::decrypt(char *buffer, size_t size, bool recurse)
 		debug << "\tStoring " << decrypted-size << " bytes of extra decrypted data\n";
 		return size;
 	}
+	case SEC_I_RENEGOTIATE:
+		debug << "\tFIXME: Renegotiate\n";
+		[[fallthrough]];
 	// TODO: More?
 	default:
 		size = 0;
@@ -397,9 +419,9 @@ size_t SChannelConnection::write(const char *buffer, size_t size)
 
 	SecPkgContext_StreamSizes Sizes;
 	QueryContextAttributes(
-            static_cast<CtxtHandle*>(context),
-            SECPKG_ATTR_STREAM_SIZES,
-            &Sizes);
+			static_cast<CtxtHandle*>(context),
+			SECPKG_ATTR_STREAM_SIZES,
+			&Sizes);
 	debug << "stream sizes:\n\theader: " << Sizes.cbHeader << "\n\tfooter: " << Sizes.cbTrailer << "\n";
 
 	char *sendBuffer = new char[bufferSize + Sizes.cbHeader + Sizes.cbTrailer];
@@ -470,6 +492,43 @@ void SChannelConnection::close()
 bool SChannelConnection::valid()
 {
 	return true;
+}
+
+bool SChannelConnection::acquire(void *credHandle)
+{
+	if (useWindows11Codepath)
+		return acquireWindows11(credHandle);
+	else
+		return acquireOldWindows(credHandle);
+}
+
+bool SChannelConnection::acquireWindows11(void *credHandle)
+{
+	SCH_CREDENTIALS cred;
+	memset(&cred, 0, sizeof(cred));
+
+	cred.dwVersion = SCH_CREDENTIALS_VERSION;
+	cred.dwFlags = SCH_CRED_AUTO_CRED_VALIDATION
+	             | SCH_CRED_NO_DEFAULT_CREDS
+	             | SCH_USE_STRONG_CRYPTO
+	             | SCH_CRED_REVOCATION_CHECK_CHAIN;
+
+	return AcquireCredentialsHandle(nullptr, (char *) UNISP_NAME, SECPKG_CRED_OUTBOUND, nullptr, &cred, nullptr, nullptr, (CredHandle *) credHandle, nullptr) == SEC_E_OK;
+}
+
+bool SChannelConnection::acquireOldWindows(void *credHandle)
+{
+	SCHANNEL_CRED cred;
+	memset(&cred, 0, sizeof(cred));
+
+	cred.dwVersion = SCHANNEL_CRED_VERSION;
+	cred.grbitEnabledProtocols = SP_PROT_TLS1_CLIENT | SP_PROT_TLS1_1_CLIENT | SP_PROT_TLS1_2_CLIENT;
+	cred.dwFlags = SCH_CRED_AUTO_CRED_VALIDATION
+	             | SCH_CRED_NO_DEFAULT_CREDS
+	             | SCH_USE_STRONG_CRYPTO
+	             | SCH_CRED_REVOCATION_CHECK_CHAIN;
+
+	return AcquireCredentialsHandle(nullptr, (char *) UNISP_NAME, SECPKG_CRED_OUTBOUND, nullptr, &cred, nullptr, nullptr, (CredHandle *) credHandle, nullptr) == SEC_E_OK;
 }
 
 #endif // HTTPS_BACKEND_SCHANNEL
