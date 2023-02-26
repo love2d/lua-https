@@ -4,6 +4,7 @@
 	#include "common/config-generated.h"
 #elif defined(WIN32) || defined(_WIN32)
 	#define HTTPS_BACKEND_SCHANNEL
+	#define HTTPS_BACKEND_WININET
 	#define HTTPS_USE_WINSOCK
 #elif defined(__ANDROID__)
 	#define HTTPS_BACKEND_ANDROID
