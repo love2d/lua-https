@@ -77,7 +77,12 @@ elseif (WIN32)
 	option (USE_SCHANNEL_BACKEND "Use the schannel backend (windows-only)" ON)
 	option (USE_NSURL_BACKEND "Use the NSUrl backend (apple-only)" OFF)
 	option (USE_ANDROID_BACKEND "Use the Android Java backend (Android-only)" OFF)
-	option (USE_WININET_BACKEND "Use the WinINet backend (windows-only)" ON)
+
+	if (CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
+		option (USE_WININET_BACKEND "Use the WinINet backend (windows-only)" OFF)
+	else ()
+		option (USE_WININET_BACKEND "Use the WinINet backend (windows-only)" ON)
+	endif ()
 
 	option (USE_WINSOCK "Use winsock instead of BSD sockets (windows-only)" ON)
 

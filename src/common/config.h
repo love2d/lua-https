@@ -4,8 +4,12 @@
 	#include "common/config-generated.h"
 #elif defined(WIN32) || defined(_WIN32)
 	#define HTTPS_BACKEND_SCHANNEL
-	#define HTTPS_BACKEND_WININET
 	#define HTTPS_USE_WINSOCK
+	#include <winapifamily.h>
+	#if !defined(WINAPI_FAMILY) || (WINAPI_FAMILY == WINAPI_FAMILY_DESKTOP_APP)
+		// WinINet is only supported on desktop.
+		#define HTTPS_BACKEND_WININET
+	#endif
 #elif defined(__ANDROID__)
 	#define HTTPS_BACKEND_ANDROID
 #elif defined(__APPLE__)
