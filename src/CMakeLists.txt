@@ -57,6 +57,10 @@ add_library (https-android STATIC EXCLUDE_FROM_ALL
 	android/AndroidClient.cpp
 )
 
+add_library (https-wininet STATIC EXCLUDE_FROM_ALL
+	windows/WinINetClient.cpp
+)
+
 ### Flags
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 	option (USE_CURL_BACKEND "Use the libcurl backend" ON)
@@ -64,6 +68,7 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 	option (USE_SCHANNEL_BACKEND "Use the schannel backend (windows-only)" OFF)
 	option (USE_NSURL_BACKEND "Use the NSUrl backend (apple-only)" OFF)
 	option (USE_ANDROID_BACKEND "Use the Android Java backend (Android-only)" OFF)
+	option (USE_WININET_BACKEND "Use the WinINet backend (windows-only)" OFF)
 
 	option (USE_WINSOCK "Use winsock instead of BSD sockets (windows-only)" OFF)
 elseif (WIN32)
@@ -72,6 +77,12 @@ elseif (WIN32)
 	option (USE_SCHANNEL_BACKEND "Use the schannel backend (windows-only)" ON)
 	option (USE_NSURL_BACKEND "Use the NSUrl backend (apple-only)" OFF)
 	option (USE_ANDROID_BACKEND "Use the Android Java backend (Android-only)" OFF)
+
+	if (CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
+		option (USE_WININET_BACKEND "Use the WinINet backend (windows-only)" OFF)
+	else ()
+		option (USE_WININET_BACKEND "Use the WinINet backend (windows-only)" ON)
+	endif ()
 
 	option (USE_WINSOCK "Use winsock instead of BSD sockets (windows-only)" ON)
 
@@ -83,6 +94,7 @@ elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 	option (USE_SCHANNEL_BACKEND "Use the schannel backend (windows-only)" OFF)
 	option (USE_NSURL_BACKEND "Use the NSUrl backend (apple-only)" ON)
 	option (USE_ANDROID_BACKEND "Use the Android Java backend (Android-only)" OFF)
+	option (USE_WININET_BACKEND "Use the WinINet backend (windows-only)" OFF)
 
 	option (USE_WINSOCK "Use winsock instead of BSD sockets (windows-only)" OFF)
 
@@ -98,6 +110,7 @@ elseif (ANDROID)
 	option (USE_SCHANNEL_BACKEND "Use the schannel backend (windows-only)" OFF)
 	option (USE_NSURL_BACKEND "Use the NSUrl backend (apple-only)" OFF)
 	option (USE_ANDROID_BACKEND "Use the Android Java backend (Android-only)" ON)
+	option (USE_WININET_BACKEND "Use the WinINet backend (windows-only)" OFF)
 
 	option (USE_WINSOCK "Use winsock instead of BSD sockets (windows-only)" OFF)
 
@@ -145,6 +158,11 @@ if (USE_ANDROID_BACKEND)
 	set(HTTPS_BACKEND_ANDROID ON)
 	target_link_libraries (https https-android)
 	message(STATUS "Ensure to add the Java files to your project too!")
+endif ()
+
+if (USE_WININET_BACKEND)
+	set(HTTPS_BACKEND_WININET ON)
+	target_link_libraries (https https-wininet wininet)
 endif ()
 
 if (USE_WINSOCK)

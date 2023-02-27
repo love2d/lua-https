@@ -3,5 +3,6 @@
 #cmakedefine HTTPS_BACKEND_SCHANNEL
 #cmakedefine HTTPS_BACKEND_NSURL
 #cmakedefine HTTPS_BACKEND_ANDROID
+#cmakedefine HTTPS_BACKEND_WININET
 #cmakedefine HTTPS_USE_WINSOCK
 #cmakedefine DEBUG_SCHANNEL
