@@ -14,16 +14,22 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 	add_link_options ("-fvisibility=hidden")
 endif ()
 
+if (LOVR)
+  set(LUA_LIBRARIES ${LOVR_LUA})
+else()
 ### Dependencies
-find_package (LuaJIT)
-if (LUAJIT_FOUND)
-	set(LUA_INCLUDE_DIR ${LUAJIT_INCLUDE_DIR})
-	set(LUA_LIBRARIES ${LUAJIT_LIBRARY})
-else ()
-	find_package (Lua 5.1 REQUIRED)
+	find_package (LuaJIT)
+	if (LUAJIT_FOUND)
+		set(LUA_INCLUDE_DIR ${LUAJIT_INCLUDE_DIR})
+		set(LUA_LIBRARIES ${LUAJIT_LIBRARY})
+	else ()
+		find_package (Lua 5.1 REQUIRED)
+	endif ()
+
+	include_directories (${LUA_INCLUDE_DIR})
 endif ()
 
-include_directories (${LUA_INCLUDE_DIR})
+
 
 ### "Libraries"
 add_library (https MODULE
