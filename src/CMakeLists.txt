@@ -131,9 +131,13 @@ target_link_libraries (https https-common)
 
 if (USE_CURL_BACKEND)
 	set(HTTPS_BACKEND_CURL ON)
+	option(HTTPS_BACKEND_CURL_LINKED "Require libcurl at load-time instead at runtime." OFF)
 	find_package (CURL REQUIRED)
 	include_directories (${CURL_INCLUDE_DIRS})
 	target_link_libraries (https https-curl)
+	if (HTTPS_BACKEND_CURL_LINKED)
+		target_link_libraries(https ${CURL_LIBRARIES})
+	endif ()
 endif ()
 
 if (USE_OPENSSL_BACKEND)

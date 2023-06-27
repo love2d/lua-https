@@ -1,4 +1,5 @@
 #cmakedefine HTTPS_BACKEND_CURL
+#cmakedefine HTTPS_BACKEND_CURL_LINKED
 #cmakedefine HTTPS_BACKEND_OPENSSL
 #cmakedefine HTTPS_BACKEND_SCHANNEL
 #cmakedefine HTTPS_BACKEND_NSURL
