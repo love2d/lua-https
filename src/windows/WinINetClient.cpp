@@ -203,12 +203,14 @@ HTTPSClient::Reply WinINetClient::request(const HTTPSClient::Request &req)
 		char buffer[BUFFER_SIZE];
 		DWORD readed = 0;
 
+		BOOL ret = InternetQueryDataAvailable(hHTTP, &readed, 0, 0);
+		if (!ret || readed == 0)
+			break;
+
 		if (!InternetReadFile(hHTTP, buffer, BUFFER_SIZE, &readed))
 			break;
 
 		responseData.write(buffer, readed);
-		if (readed < BUFFER_SIZE)
-			break;
 	}
 
 	reply.body = responseData.str();
