@@ -12,11 +12,13 @@
 #include <sstream>
 #include <vector>
 
+#ifndef HTTPS_BACKEND_CURL_LINKED
 // Dynamic library loader
 #ifdef _WIN32
 #include <windows.h>
 #else
 #include <dlfcn.h>
+#endif
 #endif
 
 typedef struct StringReader
@@ -25,6 +27,7 @@ typedef struct StringReader
 	size_t pos;
 } StringReader;
 
+#ifndef HTTPS_BACKEND_CURL_LINKED
 template <class T>
 static inline bool loadSymbol(T &var, void *handle, const char *name)
 {
@@ -35,6 +38,7 @@ static inline bool loadSymbol(T &var, void *handle, const char *name)
 #endif
 	return var != nullptr;
 }
+#endif
 
 CurlClient::Curl::Curl()
 : handle(nullptr)
