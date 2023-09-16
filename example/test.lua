@@ -32,7 +32,7 @@ local function test_download_json()
 end
 
 local function test_head()
-	local code, response = https.request("https://httpbin.org/get", {method = "HEAD"})
+	local code, response = https.request("https://postman-echo.com/get", {method = "HEAD"})
 	assert(code == 200, "expected code 200, got "..code)
 	assert(#response == 0, "expected empty response")
 end
@@ -40,7 +40,7 @@ end
 local function test_custom_header()
 	local headerName = "RandomNumber"
 	local random = math.random(1, 1000)
-	local code, response = https.request("https://httpbin.org/get", {
+	local code, response = https.request("https://postman-echo.com/get", {
 		headers = {
 			[headerName] = tostring(random)
 		}
@@ -71,7 +71,7 @@ local function test_send(method, kind)
 		contentType = "application/x-www-form-urlencoded"
 	end
 
-	local code, response = https.request("https://httpbin.org/"..method:lower(), {
+	local code, response = https.request("https://postman-echo.com/"..method:lower(), {
 		headers = {["Content-Type"] = contentType},
 		data = input(data),
 		method = method
