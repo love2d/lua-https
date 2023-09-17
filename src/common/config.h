@@ -10,6 +10,12 @@
 		// WinINet is only supported on desktop.
 		#define HTTPS_BACKEND_WININET
 	#endif
+	// Visual Studio 2017 supports __has_include
+	#if defined __has_include
+		#if __has_include(<curl/curl.h>)
+			#define HTTPS_BACKEND_CURL
+		#endif
+	#endif
 #elif defined(__ANDROID__)
 	#define HTTPS_BACKEND_ANDROID
 #elif defined(__APPLE__)
