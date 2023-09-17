@@ -21,13 +21,19 @@ local function urlencode(list)
 	return table.concat(result, "&")
 end
 
+local function checkcode(code, expected)
+	if code ~= expected then
+		error("expected code "..expected..", got "..tostring(code))
+	end
+end
+
 math.randomseed(os.time())
 
 -- Tests function
 
 local function test_download_json()
 	local code, response = https.request("https://raw.githubusercontent.com/rxi/json.lua/master/json.lua")
-	assert(code == 200, "expected code 200, got "..code)
+	checkcode(code, 200)
 	json = assert(loadstring(response, "=json.lua"))()
 end
 
@@ -45,7 +51,7 @@ local function test_custom_header()
 			[headerName] = tostring(random)
 		}
 	})
-	assert(code == 200, "expected code 200, got "..code)
+	checkcode(code, 200)
 	local root = json.decode(response)
 
 	-- Headers are case-insensitive
@@ -77,7 +83,7 @@ local function test_send(method, kind)
 		method = method
 	})
 
-	assert(code == 200, "expected code 200, got "..code)
+	checkcode(code, 200)
 	local root = json.decode(response)
 
 	for k, v in pairs(data) do
@@ -89,6 +95,7 @@ end
 -- Tests call
 print("test downloading json library") test_download_json()
 print("test custom header") test_custom_header()
+print("test HEAD") test_head()
 
 for _, method in ipairs({"POST", "PUT", "PATCH", "DELETE"}) do
 	for _, kind in ipairs({"form", "json"}) do
