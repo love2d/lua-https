@@ -33,7 +33,7 @@ endif ()
 
 ### "Libraries"
 add_library (https MODULE
-	lua/main.cpp
+	lua/luahttps.cpp
 )
 
 add_library (https-common STATIC
