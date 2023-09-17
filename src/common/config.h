@@ -1,5 +1,10 @@
 #pragma once
 
+// MSVC warnings
+#if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
+	#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #if defined(HTTPS_HAVE_CONFIG_GENERATED_H)
 	#include "common/config-generated.h"
 #elif defined(WIN32) || defined(_WIN32)
