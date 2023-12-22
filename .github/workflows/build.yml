@@ -31,7 +31,7 @@ jobs:
 
   Linux:
     name: ${{ matrix.mode.name }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 30
     strategy:
       matrix:
