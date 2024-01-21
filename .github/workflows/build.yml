@@ -10,18 +10,35 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Install Lua 5.1
-        uses: leafo/gh-actions-lua@v9.1.0
+      - name: Download LuaJIT
+        uses: actions/checkout@v3
         with:
-          luaVersion: "5.1.5"
+          repository: LuaJIT/LuaJIT
+          ref: v2.1
+          path: LuaJIT
+      - name: Compile universal LuaJIT
+        working-directory: ./LuaJIT
+        run: |
+          TARGET_FLAGS="-arch x86_64" make
+          cp ./src/libluajit.so ./src/libluajit_x64.dylib
+          cp ./src/luajit ./src/luajit_x64
+
+          make clean
+
+          TARGET_FLAGS="-arch arm64" make
+          cp ./src/libluajit.so ./src/libluajit_arm.dylib
+          cp ./src/luajit ./src/luajit_arm
+
+          lipo -create -output ./src/libluajit.dylib ./src/libluajit_x64.dylib ./src/libluajit_arm.dylib
+          lipo -create -output ./src/luajit ./src/luajit_x64 ./src/luajit_arm
       - name: Configure
-        run: cmake -Bbuild -S. -G Xcode -DLUA_INCLUDE_DIR=$PWD/.lua/include -DLUA_LIBRARIES=$PWD/.lua/lib/liblua.a
+        run: cmake -Bbuild -S. -G Xcode -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DLUA_INCLUDE_DIR=$PWD/LuaJIT/src -DLUA_LIBRARIES=$PWD/LuaJIT/src/lua
       - name: Build
         working-directory: build
         run: xcodebuild -configuration Release -scheme https
       - name: Test
         working-directory: ./build/src/Release
-        run: lua -l "https" ../../../example/test.lua
+        run: ../../../LuaJIT/src/luajit -l "https" ../../../example/test.lua
       - name: Artifact
         if: always()
         uses: actions/upload-artifact@v3
