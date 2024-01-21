@@ -12,11 +12,13 @@
 #include <sstream>
 #include <vector>
 
+#ifndef HTTPS_BACKEND_CURL_LINKED
 // Dynamic library loader
 #ifdef _WIN32
 #include <windows.h>
 #else
 #include <dlfcn.h>
+#endif
 #endif
 
 typedef struct StringReader
@@ -25,6 +27,7 @@ typedef struct StringReader
 	size_t pos;
 } StringReader;
 
+#ifndef HTTPS_BACKEND_CURL_LINKED
 template <class T>
 static inline bool loadSymbol(T &var, void *handle, const char *name)
 {
@@ -35,6 +38,7 @@ static inline bool loadSymbol(T &var, void *handle, const char *name)
 #endif
 	return var != nullptr;
 }
+#endif
 
 CurlClient::Curl::Curl()
 : handle(nullptr)
@@ -48,6 +52,19 @@ CurlClient::Curl::Curl()
 , slist_append(nullptr)
 , slist_free_all(nullptr)
 {
+#ifdef HTTPS_BACKEND_CURL_LINKED
+	// Linked cURL always available.
+	global_cleanup = &curl_global_cleanup;
+	easy_init = &curl_easy_init;
+	easy_cleanup = &curl_easy_cleanup;
+	easy_setopt = &curl_easy_setopt;
+	easy_perform = &curl_easy_perform;
+	easy_getinfo = &curl_easy_getinfo;
+	slist_append = &curl_slist_append;
+	slist_free_all = &curl_slist_free_all;
+
+	curl_global_init(CURL_GLOBAL_DEFAULT);
+#else
 #ifdef _WIN32
 	handle = (void *) LoadLibraryA("libcurl.dll");
 #else
@@ -78,6 +95,8 @@ CurlClient::Curl::Curl()
 		return;
 
 	global_init(CURL_GLOBAL_DEFAULT);
+#endif // HTTPS_BACKEND_CURL_LINKED
+
 	loaded = true;
 }
 
@@ -86,11 +105,13 @@ CurlClient::Curl::~Curl()
 	if (loaded)
 		global_cleanup();
 
+#ifndef HTTPS_BACKEND_CURL_LINKED
 	if (handle)
 #ifdef _WIN32
 		FreeLibrary((HMODULE) handle);
 #else
 		dlclose(handle);
+#endif
 #endif
 }
 
