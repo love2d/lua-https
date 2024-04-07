@@ -51,6 +51,10 @@ add_library (https-unix-libraryloader STATIC EXCLUDE_FROM_ALL
 	generic/UnixLibraryLoader.cpp
 )
 
+add_library (https-linktime-libraryloader STATIC EXCLUDE_FROM_ALL
+	generic/LinktimeLibraryLoader.cpp
+)
+
 add_library (https-curl STATIC EXCLUDE_FROM_ALL
 	generic/CurlClient.cpp
 )
@@ -137,7 +141,7 @@ elseif (ANDROID)
 endif ()
 option (DEBUG_SCHANNEL "Enable debug output in schannel backend" OFF)
 set (LIBRARY_LOADER ${LIBRARY_LOADER_DEFAULT} CACHE STRING "Which method to use to dynamically load libraries")
-set_property (CACHE LIBRARY_LOADER PROPERTY STRINGS "unix;windows")
+set_property (CACHE LIBRARY_LOADER PROPERTY STRINGS "unix;windows;linktime")
 
 set_target_properties(https PROPERTIES PREFIX "")
 
@@ -148,6 +152,7 @@ if (USE_CURL_BACKEND)
 	find_package (CURL REQUIRED)
 	include_directories (${CURL_INCLUDE_DIRS})
 	target_link_libraries (https https-curl)
+	target_link_libraries (https-linktime-libraryloader ${CURL_LIBRARY})
 endif ()
 
 if (USE_OPENSSL_BACKEND)
@@ -195,6 +200,9 @@ if ("${LIBRARY_LOADER}" STREQUAL "unix")
 elseif ("${LIBRARY_LOADER}" STREQUAL "windows")
 	set(HTTPS_LIBRARY_LOADER_WINDOWS ON)
 	target_link_libraries (https https-windows-libraryloader)
+elseif ("${LIBRARY_LOADER}" STREQUAL "linktime")
+	set(HTTPS_LIBRARY_LOADER_LINKTIME ON)
+	target_link_libraries (https https-linktime-libraryloader)
 else ()
 	message(WARNING "No library loader selected, backends that depend on dynamic loading will be broken")
 endif ()
