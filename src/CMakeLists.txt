@@ -41,6 +41,7 @@ add_library (https-common STATIC
 	common/HTTPRequest.cpp
 	common/HTTPSClient.cpp
 	common/PlaintextConnection.cpp
+	common/LibraryLoader.cpp
 )
 
 add_library (https-curl STATIC EXCLUDE_FROM_ALL
