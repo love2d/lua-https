@@ -17,7 +17,7 @@ namespace LibraryLoader
 	void CloseLibrary(handle *handle)
 	{
 		if (handle)
-			FreeLibrary(handle);
+			FreeLibrary(reinterpret_cast<HMODULE>(handle));
 	}
 
 	handle* GetCurrentProcessHandle()
