@@ -6,3 +6,5 @@
 #cmakedefine HTTPS_BACKEND_WININET
 #cmakedefine HTTPS_USE_WINSOCK
 #cmakedefine DEBUG_SCHANNEL
+#cmakedefine HTTPS_LIBRARY_LOADER_WINDOWS
+#cmakedefine HTTPS_LIBRARY_LOADER_UNIX

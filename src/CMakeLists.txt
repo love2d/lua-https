@@ -41,7 +41,14 @@ add_library (https-common STATIC
 	common/HTTPRequest.cpp
 	common/HTTPSClient.cpp
 	common/PlaintextConnection.cpp
-	common/LibraryLoader.cpp
+)
+
+add_library (https-windows-libraryloader STATIC EXCLUDE_FROM_ALL
+	windows/WindowsLibraryLoader.cpp
+)
+
+add_library (https-unix-libraryloader STATIC EXCLUDE_FROM_ALL
+	generic/UnixLibraryLoader.cpp
 )
 
 add_library (https-curl STATIC EXCLUDE_FROM_ALL
@@ -69,6 +76,8 @@ add_library (https-wininet STATIC EXCLUDE_FROM_ALL
 )
 
 ### Flags
+set (LIBRARY_LOADER_DEFAULT "unix")
+
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 	option (USE_CURL_BACKEND "Use the libcurl backend" ON)
 	option (USE_OPENSSL_BACKEND "Use the openssl backend" ON)
@@ -92,6 +101,8 @@ elseif (WIN32)
 	endif ()
 
 	option (USE_WINSOCK "Use winsock instead of BSD sockets (windows-only)" ON)
+
+	set (LIBRARY_LOADER_DEFAULT "windows")
 
 	# Windows needs to link with Lua libraries
 	target_link_libraries(https ${LUA_LIBRARIES})
@@ -125,6 +136,8 @@ elseif (ANDROID)
 	target_link_libraries(https ${LUA_LIBRARIES})
 endif ()
 option (DEBUG_SCHANNEL "Enable debug output in schannel backend" OFF)
+set (LIBRARY_LOADER ${LIBRARY_LOADER_DEFAULT} CACHE STRING "Which method to use to dynamically load libraries")
+set_property (CACHE LIBRARY_LOADER PROPERTY STRINGS "unix;windows")
 
 set_target_properties(https PROPERTIES PREFIX "")
 
@@ -174,6 +187,16 @@ endif ()
 
 if (USE_WINSOCK)
 	set(HTTPS_USE_WINSOCK ON)
+endif ()
+
+if ("${LIBRARY_LOADER}" STREQUAL "unix")
+	set(HTTPS_LIBRARY_LOADER_UNIX ON)
+	target_link_libraries (https https-unix-libraryloader)
+elseif ("${LIBRARY_LOADER}" STREQUAL "windows")
+	set(HTTPS_LIBRARY_LOADER_WINDOWS ON)
+	target_link_libraries (https https-windows-libraryloader)
+else ()
+	message(WARNING "No library loader selected, backends that depend on dynamic loading will be broken")
 endif ()
 
 ### Generate config-generated.h
