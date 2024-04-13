@@ -53,6 +53,7 @@ private:
 		const SSL_METHOD *(*SSLv23_method)();
 
 		int (*check_host)(X509 *cert, const char *name, size_t namelen, unsigned int flags, char **peername);
+		void (*X509_free)(X509* cert);
 	};
 	static SSLFuncs ssl;
 };

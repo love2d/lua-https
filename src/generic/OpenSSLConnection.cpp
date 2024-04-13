@@ -63,6 +63,7 @@ OpenSSLConnection::SSLFuncs::SSLFuncs()
 			LoadSymbol(SSLv23_method, sslhandle, "TLS_method"));
 
 	valid = valid && LoadSymbol(check_host, cryptohandle, "X509_check_host");
+	valid = valid && LoadSymbol(X509_free, cryptohandle, "X509_free");
 
 	if (library_init)
 		library_init();
@@ -125,6 +126,7 @@ bool OpenSSLConnection::connect(const std::string &hostname, uint16_t port)
 		close();
 		return false;
 	}
+	ssl.X509_free(cert);
 
 	return true;
 }
