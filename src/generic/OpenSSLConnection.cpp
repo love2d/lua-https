@@ -45,6 +45,8 @@ OpenSSLConnection::SSLFuncs::SSLFuncs()
 
 	valid = valid && LoadSymbol(CTX_new, sslhandle, "SSL_CTX_new");
 	valid = valid && LoadSymbol(CTX_ctrl, sslhandle, "SSL_CTX_ctrl");
+	if (valid)
+		LoadSymbol(CTX_set_options, sslhandle, "SSL_CTX_set_options");
 	valid = valid && LoadSymbol(CTX_set_verify, sslhandle, "SSL_CTX_set_verify");
 	valid = valid && LoadSymbol(CTX_set_default_verify_paths, sslhandle, "SSL_CTX_set_default_verify_paths");
 	valid = valid && LoadSymbol(CTX_free, sslhandle, "SSL_CTX_free");
@@ -87,7 +89,10 @@ OpenSSLConnection::OpenSSLConnection()
 	if (!context)
 		return;
 
-	ssl.CTX_ctrl(context, SSL_CTRL_OPTIONS, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3, nullptr);
+	if (ssl.CTX_set_options)
+		ssl.CTX_set_options(context, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
+	else
+		ssl.CTX_ctrl(context, SSL_CTRL_OPTIONS, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3, nullptr);
 	ssl.CTX_set_verify(context, SSL_VERIFY_PEER, nullptr);
 	ssl.CTX_set_default_verify_paths(context);
 }

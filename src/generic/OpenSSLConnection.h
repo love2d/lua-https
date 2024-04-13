@@ -36,6 +36,7 @@ private:
 
 		SSL_CTX *(*CTX_new)(const SSL_METHOD *method);
 		long (*CTX_ctrl)(SSL_CTX *ctx, int cmd, long larg, void *parg);
+		long (*CTX_set_options)(SSL_CTX *ctx, long options);
 		void (*CTX_set_verify)(SSL_CTX *ctx, int mode, void *verify_callback);
 		int (*CTX_set_default_verify_paths)(SSL_CTX *ctx);
 		void (*CTX_free)(SSL_CTX *ctx);
