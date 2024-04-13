@@ -39,8 +39,9 @@ OpenSSLConnection::SSLFuncs::SSLFuncs()
 		return;
 
 	valid = true;
-	valid = valid && (LoadSymbol(library_init, sslhandle, "SSL_library_init") ||
-			LoadSymbol(init_ssl, sslhandle, "OPENSSL_init_ssl"));
+	valid = valid && (
+			LoadSymbol(init_ssl, sslhandle, "OPENSSL_init_ssl") ||
+			LoadSymbol(library_init, sslhandle, "SSL_library_init"));
 
 	valid = valid && LoadSymbol(CTX_new, sslhandle, "SSL_CTX_new");
 	valid = valid && LoadSymbol(CTX_ctrl, sslhandle, "SSL_CTX_ctrl");
@@ -59,8 +60,10 @@ OpenSSLConnection::SSLFuncs::SSLFuncs()
 	valid = valid && (LoadSymbol(get_peer_certificate, sslhandle, "SSL_get1_peer_certificate") ||
 			LoadSymbol(get_peer_certificate, sslhandle, "SSL_get_peer_certificate"));
 
-	valid = valid && (LoadSymbol(SSLv23_method, sslhandle, "SSLv23_method") ||
-			LoadSymbol(SSLv23_method, sslhandle, "TLS_method"));
+	valid = valid && (
+			LoadSymbol(SSLv23_method, sslhandle, "TLS_client_method") ||
+			LoadSymbol(SSLv23_method, sslhandle, "TLS_method") ||
+			LoadSymbol(SSLv23_method, sslhandle, "SSLv23_method"));
 
 	valid = valid && LoadSymbol(check_host, cryptohandle, "X509_check_host");
 	valid = valid && LoadSymbol(X509_free, cryptohandle, "X509_free");
