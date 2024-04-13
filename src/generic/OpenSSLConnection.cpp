@@ -7,35 +7,34 @@
 // Not present in openssl 1.1 headers
 #define SSL_CTRL_OPTIONS 32
 
+static bool TryOpenLibraries(const char *sslName, LibraryLoader::handle *& sslHandle, const char *cryptoName, LibraryLoader::handle *&cryptoHandle)
+{
+	sslHandle = LibraryLoader::OpenLibrary(sslName);
+	cryptoHandle = LibraryLoader::OpenLibrary(cryptoName);
+
+	if (sslHandle && cryptoHandle)
+		return true;
+
+	if (sslHandle)
+		LibraryLoader::CloseLibrary(sslHandle);
+	if (cryptoHandle)
+		LibraryLoader::CloseLibrary(cryptoHandle);
+	return false;
+}
+
 OpenSSLConnection::SSLFuncs::SSLFuncs()
 {
 	using namespace LibraryLoader;
 
-	valid = false;
+	handle *sslhandle = nullptr;
+	handle *cryptohandle = nullptr;
 
-	// Try OpenSSL 3
-	handle *sslhandle = OpenLibrary("libssl.so.3");
-	handle *cryptohandle = OpenLibrary("libcrypto.so.3");
-	// Try OpenSSL 1.1
-	if (!sslhandle || !cryptohandle)
-	{
-		sslhandle = OpenLibrary("libssl.so.1.1");
-		cryptohandle = OpenLibrary("libcrypto.so.1.1");
-	}
-	// Try OpenSSL 1.0
-	if (!sslhandle || !cryptohandle)
-	{
-		sslhandle = OpenLibrary("libssl.so.1.0.0");
-		cryptohandle = OpenLibrary("libcrypto.so.1.0.0");
-	}
-	// Try OpenSSL without version
-	if (!sslhandle || !cryptohandle)
-	{
-		sslhandle = OpenLibrary("libssl.so");
-		cryptohandle = OpenLibrary("libcrypto.so");
-	}
-	// Give up
-	if (!sslhandle || !cryptohandle)
+	valid = TryOpenLibraries("libssl.so.3", sslhandle, "libcrypto.so.3", cryptohandle)
+		|| TryOpenLibraries("libssl.so.1.1", sslhandle, "libcrypto.so.1.1", cryptohandle)
+		|| TryOpenLibraries("libssl.so.1.0.0", sslhandle, "libcrypto.so.1.0.0", cryptohandle)
+		// Try the version-less name last, it may not be compatible or tested
+		|| TryOpenLibraries("libssl.so", sslhandle, "libcrypto.so", cryptohandle);
+	if (!valid)
 		return;
 
 	valid = true;
