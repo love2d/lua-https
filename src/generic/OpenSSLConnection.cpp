@@ -13,9 +13,15 @@ OpenSSLConnection::SSLFuncs::SSLFuncs()
 
 	valid = false;
 
+	// Try OpenSSL 3
+	handle *sslhandle = OpenLibrary("libssl.so.3");
+	handle *cryptohandle = OpenLibrary("libcrypto.so.3");
 	// Try OpenSSL 1.1
-	handle *sslhandle = OpenLibrary("libssl.so.1.1");
-	handle *cryptohandle = OpenLibrary("libcrypto.so.1.1");
+	if (!sslhandle || !cryptohandle)
+	{
+		sslhandle = OpenLibrary("libssl.so.1.1");
+		cryptohandle = OpenLibrary("libcrypto.so.1.1");
+	}
 	// Try OpenSSL 1.0
 	if (!sslhandle || !cryptohandle)
 	{
@@ -50,7 +56,8 @@ OpenSSLConnection::SSLFuncs::SSLFuncs()
 	valid = valid && LoadSymbol(write, sslhandle, "SSL_write");
 	valid = valid && LoadSymbol(shutdown, sslhandle, "SSL_shutdown");
 	valid = valid && LoadSymbol(get_verify_result, sslhandle, "SSL_get_verify_result");
-	valid = valid && LoadSymbol(get_peer_certificate, sslhandle, "SSL_get_peer_certificate");
+	valid = valid && (LoadSymbol(get_peer_certificate, sslhandle, "SSL_get1_peer_certificate") ||
+			LoadSymbol(get_peer_certificate, sslhandle, "SSL_get_peer_certificate"));
 
 	valid = valid && (LoadSymbol(SSLv23_method, sslhandle, "SSLv23_method") ||
 			LoadSymbol(SSLv23_method, sslhandle, "TLS_method"));
