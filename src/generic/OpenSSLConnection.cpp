@@ -2,65 +2,60 @@
 
 #ifdef HTTPS_BACKEND_OPENSSL
 
-#include <dlfcn.h>
+#include "../common/LibraryLoader.h"
 
 // Not present in openssl 1.1 headers
 #define SSL_CTRL_OPTIONS 32
 
-template <class T>
-static inline bool loadSymbol(T &var, void *handle, const char *name)
-{
-	var = reinterpret_cast<T>(dlsym(handle, name));
-	return var != nullptr;
-}
-
 OpenSSLConnection::SSLFuncs::SSLFuncs()
 {
+	using namespace LibraryLoader;
+
 	valid = false;
 
 	// Try OpenSSL 1.1
-	void *sslhandle = dlopen("libssl.so.1.1", RTLD_LAZY);
-	void *cryptohandle = dlopen("libcrypto.so.1.1", RTLD_LAZY);
+	handle *sslhandle = OpenLibrary("libssl.so.1.1");
+	handle *cryptohandle = OpenLibrary("libcrypto.so.1.1");
 	// Try OpenSSL 1.0
 	if (!sslhandle || !cryptohandle)
 	{
-		sslhandle = dlopen("libssl.so.1.0.0", RTLD_LAZY);
-		cryptohandle = dlopen("libcrypto.so.1.0.0", RTLD_LAZY);
+		sslhandle = OpenLibrary("libssl.so.1.0.0");
+		cryptohandle = OpenLibrary("libcrypto.so.1.0.0");
 	}
 	// Try OpenSSL without version
 	if (!sslhandle || !cryptohandle)
 	{
-		sslhandle = dlopen("libssl.so", RTLD_LAZY);
-		cryptohandle = dlopen("libcrypto.so", RTLD_LAZY);
+		sslhandle = OpenLibrary("libssl.so");
+		cryptohandle = OpenLibrary("libcrypto.so");
 	}
 	// Give up
 	if (!sslhandle || !cryptohandle)
 		return;
 
 	valid = true;
-	valid = valid && (loadSymbol(library_init, sslhandle, "SSL_library_init") ||
-			loadSymbol(init_ssl, sslhandle, "OPENSSL_init_ssl"));
+	valid = valid && (LoadSymbol(library_init, sslhandle, "SSL_library_init") ||
+			LoadSymbol(init_ssl, sslhandle, "OPENSSL_init_ssl"));
 
-	valid = valid && loadSymbol(CTX_new, sslhandle, "SSL_CTX_new");
-	valid = valid && loadSymbol(CTX_ctrl, sslhandle, "SSL_CTX_ctrl");
-	valid = valid && loadSymbol(CTX_set_verify, sslhandle, "SSL_CTX_set_verify");
-	valid = valid && loadSymbol(CTX_set_default_verify_paths, sslhandle, "SSL_CTX_set_default_verify_paths");
-	valid = valid && loadSymbol(CTX_free, sslhandle, "SSL_CTX_free");
+	valid = valid && LoadSymbol(CTX_new, sslhandle, "SSL_CTX_new");
+	valid = valid && LoadSymbol(CTX_ctrl, sslhandle, "SSL_CTX_ctrl");
+	valid = valid && LoadSymbol(CTX_set_verify, sslhandle, "SSL_CTX_set_verify");
+	valid = valid && LoadSymbol(CTX_set_default_verify_paths, sslhandle, "SSL_CTX_set_default_verify_paths");
+	valid = valid && LoadSymbol(CTX_free, sslhandle, "SSL_CTX_free");
 
-	valid = valid && loadSymbol(SSL_new, sslhandle, "SSL_new");
-	valid = valid && loadSymbol(SSL_free, sslhandle, "SSL_free");
-	valid = valid && loadSymbol(set_fd, sslhandle, "SSL_set_fd");
-	valid = valid && loadSymbol(connect, sslhandle, "SSL_connect");
-	valid = valid && loadSymbol(read, sslhandle, "SSL_read");
-	valid = valid && loadSymbol(write, sslhandle, "SSL_write");
-	valid = valid && loadSymbol(shutdown, sslhandle, "SSL_shutdown");
-	valid = valid && loadSymbol(get_verify_result, sslhandle, "SSL_get_verify_result");
-	valid = valid && loadSymbol(get_peer_certificate, sslhandle, "SSL_get_peer_certificate");
+	valid = valid && LoadSymbol(SSL_new, sslhandle, "SSL_new");
+	valid = valid && LoadSymbol(SSL_free, sslhandle, "SSL_free");
+	valid = valid && LoadSymbol(set_fd, sslhandle, "SSL_set_fd");
+	valid = valid && LoadSymbol(connect, sslhandle, "SSL_connect");
+	valid = valid && LoadSymbol(read, sslhandle, "SSL_read");
+	valid = valid && LoadSymbol(write, sslhandle, "SSL_write");
+	valid = valid && LoadSymbol(shutdown, sslhandle, "SSL_shutdown");
+	valid = valid && LoadSymbol(get_verify_result, sslhandle, "SSL_get_verify_result");
+	valid = valid && LoadSymbol(get_peer_certificate, sslhandle, "SSL_get_peer_certificate");
 
-	valid = valid && (loadSymbol(SSLv23_method, sslhandle, "SSLv23_method") ||
-			loadSymbol(SSLv23_method, sslhandle, "TLS_method"));
+	valid = valid && (LoadSymbol(SSLv23_method, sslhandle, "SSLv23_method") ||
+			LoadSymbol(SSLv23_method, sslhandle, "TLS_method"));
 
-	valid = valid && loadSymbol(check_host, cryptohandle, "X509_check_host");
+	valid = valid && LoadSymbol(check_host, cryptohandle, "X509_check_host");
 
 	if (library_init)
 		library_init();
