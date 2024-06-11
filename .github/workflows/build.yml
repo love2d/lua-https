@@ -9,9 +9,9 @@ jobs:
       MACOSX_DEPLOYMENT_TARGET: "10.9"
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Download LuaJIT
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: LuaJIT/LuaJIT
           ref: v2.1
@@ -41,7 +41,7 @@ jobs:
         run: ../../../LuaJIT/src/luajit -l "https" ../../../example/test.lua
       - name: Artifact
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: https-macos.zip
           path: build/src/**/https.so
@@ -67,7 +67,7 @@ jobs:
           artifact: 1
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Update APT Repository
         run: sudo apt-get update
       - name: Install Dependencies
@@ -86,7 +86,7 @@ jobs:
         run: luajit -l "https" ../example/test.lua
       - name: Artifact
         if: matrix.mode.artifact == 1
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: https-ubuntu.zip
           path: install/https.so
@@ -103,9 +103,9 @@ jobs:
         shell: cmd
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Download LuaJIT
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         repository: LuaJIT/LuaJIT
         ref: v2.1
@@ -126,7 +126,7 @@ jobs:
       run: ..\LuaJIT\src\luajit ..\example\test.lua
     - name: Artifact
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: https-windows-${{ matrix.arch }}.zip
         path: install/https.dll
