@@ -116,6 +116,10 @@ elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 	option (USE_OPENSSL_BACKEND "Use the openssl backend" OFF)
 	option (USE_SCHANNEL_BACKEND "Use the schannel backend (windows-only)" OFF)
 	option (USE_NSURL_BACKEND "Use the NSUrl backend (apple-only)" ON)
+
+  # Enabling ARC for apple/NSURLClient.mm
+  set_source_files_properties(apple/NSURLClient.mm PROPERTIES COMPILE_FLAGS "-fobjc-arc")
+
 	option (USE_ANDROID_BACKEND "Use the Android Java backend (Android-only)" OFF)
 	option (USE_WININET_BACKEND "Use the WinINet backend (windows-only)" OFF)
 
