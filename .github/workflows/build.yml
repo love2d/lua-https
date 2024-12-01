@@ -35,7 +35,7 @@ jobs:
         run: cmake -Bbuild -S. -G Xcode -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DLUA_INCLUDE_DIR=$PWD/LuaJIT/src -DLUA_LIBRARIES=$PWD/LuaJIT/src/lua
       - name: Build
         working-directory: build
-        run: xcodebuild -configuration Release -scheme https
+        run: xcodebuild -configuration Release -scheme https -destination generic/platform=macOS
       - name: Test
         working-directory: ./build/src/Release
         run: ../../../LuaJIT/src/luajit -l "https" ../../../example/test.lua
