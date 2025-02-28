@@ -19,7 +19,8 @@ LOCAL_SRC_FILES := \
 	src/common/HTTPRequest.cpp \
 	src/common/HTTPSClient.cpp \
 	src/common/PlaintextConnection.cpp \
-	src/android/AndroidClient.cpp
+	src/android/AndroidClient.cpp \
+	src/generic/UnixLibraryLoader.cpp
 
 LOCAL_SHARED_LIBRARIES := liblove
 
